@@ -623,7 +623,11 @@ if df is not None:
     # =====================================================
     # PLANNING PAGE
     # =====================================================
-    elif menu == "Planning":
+    # =====================================================
+# PLANNING PAGE
+# =====================================================
+
+elif menu == "Planning":
 
     st.subheader("📌 SAC Planning Engine")
 
@@ -651,11 +655,7 @@ if df is not None:
 
         source_version = st.selectbox(
             "Source Version",
-            sorted(
-                df[version_col]
-                .astype(str)
-                .unique()
-            )
+            sorted(df[version_col].astype(str).unique())
         )
 
         target_version = st.text_input(
@@ -670,35 +670,17 @@ if df is not None:
 
         if st.button("Execute Version Copy"):
 
-            temp = df[
-                df[version_col]
-                .astype(str)
-                == source_version
-            ].copy()
-
+            temp = df[df[version_col].astype(str) == source_version].copy()
             temp[version_col] = target_version
 
             for m in measures:
-                temp[m] = (
-                    temp[m]
-                    * (1 + adjustment / 100)
-                ).round(2)
+                temp[m] = (temp[m] * (1 + adjustment / 100)).round(2)
 
-            df = pd.concat(
-                [df, temp],
-                ignore_index=True
-            )
-
+            df = pd.concat([df, temp], ignore_index=True)
             st.session_state.df = df
 
-            st.success(
-                f"{source_version} → {target_version} completed"
-            )
-
-            st.dataframe(
-                df,
-                use_container_width=True
-            )
+            st.success(f"{source_version} → {target_version} completed")
+            st.dataframe(df, use_container_width=True)
 
     # ==========================================
     # CROSS MODEL COPY
@@ -706,30 +688,15 @@ if df is not None:
 
     elif action == "Cross Model Copy":
 
-        source_measure = st.selectbox(
-            "Source Measure",
-            measures
-        )
-
-        target_measure = st.text_input(
-            "Target Measure",
-            "Budget_Sales"
-        )
+        source_measure = st.selectbox("Source Measure", measures)
+        target_measure = st.text_input("Target Measure", "Budget_Sales")
 
         if st.button("Copy Measure"):
-
             df[target_measure] = df[source_measure]
-
             st.session_state.df = df
 
-            st.success(
-                "Cross Model Copy Completed"
-            )
-
-            st.dataframe(
-                df,
-                use_container_width=True
-            )
+            st.success("Cross Model Copy Completed")
+            st.dataframe(df, use_container_width=True)
 
     # ==========================================
     # COPY DATA ACTION
@@ -737,38 +704,17 @@ if df is not None:
 
     elif action == "Copy Data Action":
 
-        source_measure = st.selectbox(
-            "Source Measure",
-            measures
-        )
+        source_measure = st.selectbox("Source Measure", measures)
+        target_measure = st.text_input("Target Measure", "Copied_Data")
 
-        target_measure = st.text_input(
-            "Target Measure",
-            "Copied_Data"
-        )
-
-        factor = st.number_input(
-            "Multiplier",
-            value=1.0
-        )
+        factor = st.number_input("Multiplier", value=1.0)
 
         if st.button("Run Copy"):
-
-            df[target_measure] = (
-                df[source_measure]
-                * factor
-            ).round(2)
-
+            df[target_measure] = (df[source_measure] * factor).round(2)
             st.session_state.df = df
 
-            st.success(
-                "Copy Action Completed"
-            )
-
-            st.dataframe(
-                df,
-                use_container_width=True
-            )
+            st.success("Copy Action Completed")
+            st.dataframe(df, use_container_width=True)
 
     # ==========================================
     # ALLOCATION
@@ -776,53 +722,23 @@ if df is not None:
 
     elif action == "Allocation":
 
-        driver = st.selectbox(
-            "Driver Measure",
-            measures
-        )
-
-        amount = st.number_input(
-            "Amount to Allocate",
-            value=100000.0
-        )
-
-        target_col = st.text_input(
-            "Target Column",
-            "Allocated"
-        )
+        driver = st.selectbox("Driver Measure", measures)
+        amount = st.number_input("Amount to Allocate", value=100000.0)
+        target_col = st.text_input("Target Column", "Allocated")
 
         if st.button("Run Allocation"):
 
             total_driver = df[driver].sum()
 
             if total_driver == 0:
-
-                st.error(
-                    "Driver total cannot be zero"
-                )
-
+                st.error("Driver total cannot be zero")
             else:
-
-                df[target_col] = (
-                    df[driver]
-                    / total_driver
-                ) * amount
-
-                df[target_col] = (
-                    df[target_col]
-                    .round(2)
-                )
+                df[target_col] = (df[driver] / total_driver) * amount
+                df[target_col] = df[target_col].round(2)
 
                 st.session_state.df = df
-
-                st.success(
-                    "Allocation Completed"
-                )
-
-                st.dataframe(
-                    df,
-                    use_container_width=True
-                )
+                st.success("Allocation Completed")
+                st.dataframe(df, use_container_width=True)
 
     # ==========================================
     # FACT DELETION
@@ -830,39 +746,20 @@ if df is not None:
 
     elif action == "Fact Deletion":
 
-        dim = st.selectbox(
-            "Dimension",
-            dimensions
-        )
+        dim = st.selectbox("Dimension", dimensions)
 
         member = st.selectbox(
             "Member",
-            sorted(
-                df[dim]
-                .astype(str)
-                .unique()
-            )
+            sorted(df[dim].astype(str).unique())
         )
 
         if st.button("Delete Facts"):
 
-            df = df[
-                df[dim]
-                .astype(str)
-                != member
-            ]
-
+            df = df[df[dim].astype(str) != member]
             st.session_state.df = df
 
-            st.success(
-                f"Deleted records for {member}"
-            )
-
-            st.dataframe(
-                df,
-                use_container_width=True
-            )
-
+            st.success(f"Deleted records for {member}")
+            st.dataframe(df, use_container_width=True)
     # =====================================================
     # FORECAST PAGE
     # =====================================================
