@@ -850,14 +850,21 @@ if uploaded_file is not None:
             filter_df,
             use_container_width=True
         )
+# =====================================================
+# FORECAST PAGE
+# =====================================================
 
-    # =====================================================
-    # FORECAST PAGE
-    # =====================================================
+elif menu == "Forecast":
 
-    elif menu == "Forecast":
+    st.subheader("Forecast Analysis")
 
-        st.subheader("Forecast Analysis")
+    if len(measures) == 0:
+
+        st.warning(
+            "No numeric measures available for forecasting."
+        )
+
+    else:
 
         forecast_measure = st.selectbox(
             "Forecast Measure",
@@ -865,44 +872,70 @@ if uploaded_file is not None:
             key="forecast_measure"
         )
 
-        forecast_percent = st.slider(
-            "Forecast Increase %",
-            1,
-            100,
-            10,
-            key="forecast_slider"
-        )
+        if forecast_measure not in df.columns:
 
-        forecast_df = df.copy()
-
-        forecast_df["Forecast"] = (
-            forecast_df[forecast_measure]
-            * (
-                1
-                + forecast_percent / 100
+            st.error(
+                f"{forecast_measure} not found in dataframe."
             )
-        ).round(2)
 
-        fig = px.line(
-            forecast_df,
-            y=[
-                forecast_measure,
-                "Forecast"
-            ]
-        )
+        else:
 
-        st.plotly_chart(
-            fig,
-            use_container_width=True
-        )
+            # Convert safely
+            df[forecast_measure] = pd.to_numeric(
+                df[forecast_measure],
+                errors="coerce"
+            )
 
-        st.dataframe(
-            forecast_df,
-            use_container_width=True
-        )
+            forecast_percent = st.slider(
+                "Forecast Increase %",
+                1,
+                100,
+                10,
+                key="forecast_slider"
+            )
 
-else:
+            forecast_df = df.copy()
 
-    st.info(
-        "Upload CSV or Excel File"
-    )
+            forecast_df["Forecast"] = (
+                forecast_df[forecast_measure]
+                * (
+                    1
+                    + forecast_percent / 100
+                )
+            ).round(2)
+
+            st.success(
+                f"Forecast created for {forecast_measure}"
+            )
+
+            # ---------------- TABLE ----------------
+
+            st.dataframe(
+                forecast_df,
+                use_container_width=True
+            )
+
+            # ---------------- CHART ----------------
+
+            try:
+
+                fig = px.line(
+                    forecast_df,
+                    y=[
+                        forecast_measure,
+                        "Forecast"
+                    ],
+                    title=f"{forecast_measure} Forecast"
+                )
+
+                st.plotly_chart(
+                    fig,
+                    use_container_width=True
+                )
+
+            except Exception as e:
+
+                st.error(
+                    f"Chart Error: {e}"
+                )
+   
