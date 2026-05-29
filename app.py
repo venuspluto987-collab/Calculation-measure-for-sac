@@ -1,4 +1,3 @@
-```python
 # =====================================================
 # SAC STYLE ANALYTICS + PLANNING APP
 # FULL ENTERPRISE VERSION
@@ -1095,4 +1094,3 @@ else:
     st.info(
         "Upload CSV or Excel File"
     )
-```
