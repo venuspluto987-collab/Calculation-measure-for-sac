@@ -224,6 +224,415 @@ if uploaded_file is not None:
             use_container_width=True,
             height=500
         )
+     # =====================================================
+# MAIN DATAFRAME
+# =====================================================
+
+df = st.session_state.df
+
+# =====================================================
+# MAIN
+# =====================================================
+
+if df is not None:
+
+    # =====================================================
+    # EMPTY DATA CHECK
+    # =====================================================
+
+    if df.empty:
+
+        st.warning("Uploaded file is empty")
+        st.stop()
+
+    # =====================================================
+    # AUTO DETECT DIMENSIONS / MEASURES
+    # =====================================================
+
+    measures = []
+    dimensions = []
+
+    for col in df.columns:
+
+        if (
+            pd.api.types.is_numeric_dtype(df[col])
+            and "id" not in col.lower()
+        ):
+
+            measures.append(col)
+
+        else:
+
+            dimensions.append(col)
+
+    # =====================================================
+    # MODEL PAGE
+    # =====================================================
+
+    if menu == "Model":
+
+        st.subheader("Model Structure")
+
+        col1, col2 = st.columns(2)
+
+        # =====================================================
+        # DIMENSIONS
+        # =====================================================
+
+        with col1:
+
+            st.markdown("### Dimensions")
+
+            for d in dimensions:
+
+                st.write("•", d)
+
+        # =====================================================
+        # MEASURES
+        # =====================================================
+
+        with col2:
+
+            st.markdown("### Measures")
+
+            for m in measures:
+
+                st.write("•", m)
+
+        # =====================================================
+        # PREVIEW
+        # =====================================================
+
+        st.subheader("Preview Data")
+
+        st.dataframe(
+            df,
+            use_container_width=True,
+            height=400
+        )
+
+        # =====================================================
+        # SAC CALCULATIONS
+        # =====================================================
+
+        st.subheader("SAC Calculations")
+
+        calc_type = st.selectbox(
+            "Calculation Type",
+            [
+                "Addition",
+                "Subtraction",
+                "Multiplication",
+                "Division",
+                "Percentage",
+                "Growth %",
+                "Running Total",
+                "Moving Average",
+                "Rank",
+                "Variance",
+                "Variance %",
+                "Average",
+                "Min",
+                "Max",
+                "Count",
+                "Median",
+                "Standard Deviation",
+                "Log",
+                "Square Root",
+                "IF Condition",
+                "Custom Formula"
+            ]
+        )
+
+        calc_name = st.text_input(
+            "Calculated Column Name",
+            "New_Calculation"
+        )
+
+        measure1 = st.selectbox(
+            "Measure 1",
+            measures,
+            key="m1"
+        )
+
+        measure2 = st.selectbox(
+            "Measure 2",
+            measures,
+            key="m2"
+        )
+
+        # =====================================================
+        # IF CONDITION
+        # =====================================================
+
+        if calc_type == "IF Condition":
+
+            condition_operator = st.selectbox(
+                "Condition",
+                [
+                    ">",
+                    "<",
+                    "=",
+                    ">=",
+                    "<="
+                ]
+            )
+
+            threshold = st.number_input(
+                "Threshold",
+                value=100.0
+            )
+
+            true_value = st.number_input(
+                "True Value",
+                value=1.0
+            )
+
+            false_value = st.number_input(
+                "False Value",
+                value=0.0
+            )
+
+        # =====================================================
+        # CUSTOM FORMULA
+        # =====================================================
+
+        formula = ""
+
+        if calc_type == "Custom Formula":
+
+            formula = st.text_input(
+                "Formula Example: Sales * Quantity"
+            )
+
+        # =====================================================
+        # RUN CALCULATION
+        # =====================================================
+
+        if st.button("Run Calculation"):
+
+            try:
+
+                if calc_type == "Addition":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        + df[measure2]
+                    )
+
+                elif calc_type == "Subtraction":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        - df[measure2]
+                    )
+
+                elif calc_type == "Multiplication":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        * df[measure2]
+                    )
+
+                elif calc_type == "Division":
+
+                    df[calc_name] = np.where(
+                        df[measure2] != 0,
+                        df[measure1]
+                        / df[measure2],
+                        0
+                    )
+
+                elif calc_type == "Percentage":
+
+                    total = df[measure1].sum()
+
+                    df[calc_name] = (
+                        df[measure1]
+                        / total
+                    ) * 100
+
+                elif calc_type == "Growth %":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        .pct_change()
+                    ) * 100
+
+                elif calc_type == "Running Total":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        .cumsum()
+                    )
+
+                elif calc_type == "Moving Average":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        .rolling(3)
+                        .mean()
+                    )
+
+                elif calc_type == "Rank":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        .rank(
+                            ascending=False
+                        )
+                    )
+
+                elif calc_type == "Variance":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        - df[measure2]
+                    )
+
+                elif calc_type == "Variance %":
+
+                    df[calc_name] = np.where(
+                        df[measure2] != 0,
+                        (
+                            (
+                                df[measure1]
+                                - df[measure2]
+                            )
+                            / df[measure2]
+                        ) * 100,
+                        0
+                    )
+
+                elif calc_type == "Average":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        .mean()
+                    )
+
+                elif calc_type == "Min":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        .min()
+                    )
+
+                elif calc_type == "Max":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        .max()
+                    )
+
+                elif calc_type == "Count":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        .count()
+                    )
+
+                elif calc_type == "Median":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        .median()
+                    )
+
+                elif calc_type == "Standard Deviation":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        .std()
+                    )
+
+                elif calc_type == "Log":
+
+                    df[calc_name] = np.log1p(
+                        df[measure1]
+                    )
+
+                elif calc_type == "Square Root":
+
+                    df[calc_name] = np.sqrt(
+                        df[measure1]
+                    )
+
+                elif calc_type == "IF Condition":
+
+                    if condition_operator == ">":
+
+                        df[calc_name] = np.where(
+                            df[measure1] > threshold,
+                            true_value,
+                            false_value
+                        )
+
+                    elif condition_operator == "<":
+
+                        df[calc_name] = np.where(
+                            df[measure1] < threshold,
+                            true_value,
+                            false_value
+                        )
+
+                    elif condition_operator == "=":
+
+                        df[calc_name] = np.where(
+                            df[measure1] == threshold,
+                            true_value,
+                            false_value
+                        )
+
+                    elif condition_operator == ">=":
+
+                        df[calc_name] = np.where(
+                            df[measure1] >= threshold,
+                            true_value,
+                            false_value
+                        )
+
+                    elif condition_operator == "<=":
+
+                        df[calc_name] = np.where(
+                            df[measure1] <= threshold,
+                            true_value,
+                            false_value
+                        )
+
+                elif calc_type == "Custom Formula":
+
+                    df[calc_name] = df.eval(formula)
+
+                # =====================================================
+                # ROUND
+                # =====================================================
+
+                df[calc_name] = (
+                    df[calc_name]
+                    .round(2)
+                )
+
+                # =====================================================
+                # SAVE SESSION
+                # =====================================================
+
+                st.session_state.df = df
+
+                st.success(
+                    f"{calc_name} created successfully"
+                )
+
+                st.dataframe(
+                    df,
+                    use_container_width=True
+                )
+
+            except Exception as e:
+
+                st.error(
+                    f"Calculation Error: {e}"
+                )
 
     # =====================================================
     # STORY PAGE
