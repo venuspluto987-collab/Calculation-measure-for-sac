@@ -4,12 +4,19 @@ import numpy as np
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="Auto Calculated Measures",
+    page_title="Advanced Calculated Measures",
     layout="wide"
 )
 
+# ---------------- LOAD CSS ----------------
+with open("styles.css") as f:
+    st.markdown(
+        f"<style>{f.read()}</style>",
+        unsafe_allow_html=True
+    )
+
 # ---------------- TITLE ----------------
-st.title("📊 Auto Calculated Measures")
+st.title("📊 Advanced Calculated Measures")
 
 # ---------------- FILE UPLOAD ----------------
 uploaded_file = st.file_uploader(
@@ -20,12 +27,18 @@ uploaded_file = st.file_uploader(
 # ---------------- MAIN ----------------
 if uploaded_file is not None:
 
-    # Read file
-    if uploaded_file.name.endswith(".csv"):
-        df = pd.read_csv(uploaded_file)
+    # Read File
+    try:
 
-    else:
-        df = pd.read_excel(uploaded_file)
+        if uploaded_file.name.endswith(".csv"):
+            df = pd.read_csv(uploaded_file)
+
+        else:
+            df = pd.read_excel(uploaded_file)
+
+    except Exception as e:
+        st.error(f"File Error: {e}")
+        st.stop()
 
     # ---------------- DETECT MEASURES ----------------
     measures = []
@@ -46,58 +59,125 @@ if uploaded_file is not None:
         use_container_width=True
     )
 
-    # ---------------- CALCULATED MEASURE ----------------
+    # ---------------- CALCULATION SECTION ----------------
     st.subheader("Create Calculated Measure")
 
     # Calculation Types
     calculation_types = [
+
+        # Basic
         "Addition",
         "Subtraction",
         "Multiplication",
         "Division",
+
+        # Percentage
         "Profit %",
-        "Running Total",
+        "Growth %",
+        "Percentage Contribution",
+
+        # Aggregations
         "Average",
+        "Sum",
+        "Minimum",
+        "Maximum",
+        "Count",
+
+        # Running Calculations
+        "Running Total",
+        "Cumulative Average",
+
+        # Ranking
         "Rank",
-        "Growth %"
+        "Dense Rank",
+
+        # Statistical
+        "Standard Deviation",
+        "Variance",
+        "Z-Score",
+
+        # Time Intelligence
+        "Moving Average",
+        "Rolling Sum",
+
+        # Window Functions
+        "Lag",
+        "Lead",
+
+        # Conditional
+        "High/Low Category",
+
+        # Finance
+        "Margin %",
+        "Tax Calculation",
+        "Discount Calculation",
+
+        # Analytics
+        "Percentile",
+        "Normalized Score"
     ]
 
     col1, col2, col3 = st.columns(3)
 
-    # Measure 1
+    # ---------------- MEASURE 1 ----------------
     with col1:
+
         measure1 = st.selectbox(
             "Select Measure 1",
             measures
         )
 
-    # Calculation
+    # ---------------- CALC TYPE ----------------
     with col2:
+
         calc_type = st.selectbox(
             "Calculation Type",
             calculation_types
         )
 
-    # Measure 2
+    # ---------------- MEASURE 2 ----------------
     with col3:
 
-        # Some calculations don't need Measure2
-        if calc_type in [
+        calculations_without_measure2 = [
+
             "Running Total",
             "Average",
             "Rank",
-            "Growth %"
-        ]:
+            "Growth %",
+            "Sum",
+            "Minimum",
+            "Maximum",
+            "Count",
+            "Cumulative Average",
+            "Dense Rank",
+            "Standard Deviation",
+            "Variance",
+            "Z-Score",
+            "Moving Average",
+            "Rolling Sum",
+            "Lag",
+            "Lead",
+            "High/Low Category",
+            "Tax Calculation",
+            "Discount Calculation",
+            "Percentile",
+            "Normalized Score",
+            "Percentage Contribution"
+        ]
+
+        if calc_type in calculations_without_measure2:
+
             measure2 = None
-            st.write("No second measure needed")
+            st.info("Second measure not needed")
 
         else:
+
             measure2 = st.selectbox(
                 "Select Measure 2",
                 measures
             )
 
-    # New Column Name
+    # ---------------- NEW COLUMN NAME ----------------
     new_measure_name = st.text_input(
         "Calculated Measure Name",
         "Calculated_Measure"
@@ -108,7 +188,7 @@ if uploaded_file is not None:
 
         try:
 
-            # Convert numeric
+            # Convert Numeric
             df[measure1] = pd.to_numeric(
                 df[measure1],
                 errors="coerce"
@@ -120,9 +200,8 @@ if uploaded_file is not None:
                     errors="coerce"
                 )
 
-            # ---------------- CALCULATIONS ----------------
+            # ---------------- BASIC ----------------
 
-            # Addition
             if calc_type == "Addition":
 
                 df[new_measure_name] = (
@@ -130,7 +209,6 @@ if uploaded_file is not None:
                     + df[measure2]
                 )
 
-            # Subtraction
             elif calc_type == "Subtraction":
 
                 df[new_measure_name] = (
@@ -138,7 +216,6 @@ if uploaded_file is not None:
                     - df[measure2]
                 )
 
-            # Multiplication
             elif calc_type == "Multiplication":
 
                 df[new_measure_name] = (
@@ -146,7 +223,6 @@ if uploaded_file is not None:
                     * df[measure2]
                 )
 
-            # Division
             elif calc_type == "Division":
 
                 df[new_measure_name] = (
@@ -157,7 +233,8 @@ if uploaded_file is not None:
                     np.nan
                 )
 
-            # Profit %
+            # ---------------- PERCENTAGE ----------------
+
             elif calc_type == "Profit %":
 
                 df[new_measure_name] = (
@@ -168,15 +245,25 @@ if uploaded_file is not None:
                     / df[measure1]
                 ) * 100
 
-            # Running Total
-            elif calc_type == "Running Total":
+            elif calc_type == "Growth %":
 
                 df[new_measure_name] = (
                     df[measure1]
-                    .cumsum()
+                    .pct_change()
+                    * 100
                 )
 
-            # Average
+            elif calc_type == "Percentage Contribution":
+
+                total = df[measure1].sum()
+
+                df[new_measure_name] = (
+                    df[measure1]
+                    / total
+                ) * 100
+
+            # ---------------- AGGREGATION ----------------
+
             elif calc_type == "Average":
 
                 avg_value = (
@@ -186,7 +273,61 @@ if uploaded_file is not None:
 
                 df[new_measure_name] = avg_value
 
-            # Rank
+            elif calc_type == "Sum":
+
+                total = (
+                    df[measure1]
+                    .sum()
+                )
+
+                df[new_measure_name] = total
+
+            elif calc_type == "Minimum":
+
+                min_value = (
+                    df[measure1]
+                    .min()
+                )
+
+                df[new_measure_name] = min_value
+
+            elif calc_type == "Maximum":
+
+                max_value = (
+                    df[measure1]
+                    .max()
+                )
+
+                df[new_measure_name] = max_value
+
+            elif calc_type == "Count":
+
+                count_value = (
+                    df[measure1]
+                    .count()
+                )
+
+                df[new_measure_name] = count_value
+
+            # ---------------- RUNNING ----------------
+
+            elif calc_type == "Running Total":
+
+                df[new_measure_name] = (
+                    df[measure1]
+                    .cumsum()
+                )
+
+            elif calc_type == "Cumulative Average":
+
+                df[new_measure_name] = (
+                    df[measure1]
+                    .expanding()
+                    .mean()
+                )
+
+            # ---------------- RANKING ----------------
+
             elif calc_type == "Rank":
 
                 df[new_measure_name] = (
@@ -196,13 +337,163 @@ if uploaded_file is not None:
                     )
                 )
 
-            # Growth %
-            elif calc_type == "Growth %":
+            elif calc_type == "Dense Rank":
 
                 df[new_measure_name] = (
                     df[measure1]
-                    .pct_change()
+                    .rank(
+                        method="dense",
+                        ascending=False
+                    )
+                )
+
+            # ---------------- STATISTICS ----------------
+
+            elif calc_type == "Standard Deviation":
+
+                std_value = (
+                    df[measure1]
+                    .std()
+                )
+
+                df[new_measure_name] = std_value
+
+            elif calc_type == "Variance":
+
+                var_value = (
+                    df[measure1]
+                    .var()
+                )
+
+                df[new_measure_name] = var_value
+
+            elif calc_type == "Z-Score":
+
+                mean = (
+                    df[measure1]
+                    .mean()
+                )
+
+                std = (
+                    df[measure1]
+                    .std()
+                )
+
+                df[new_measure_name] = (
+                    (
+                        df[measure1]
+                        - mean
+                    )
+                    / std
+                )
+
+            # ---------------- TIME ----------------
+
+            elif calc_type == "Moving Average":
+
+                df[new_measure_name] = (
+                    df[measure1]
+                    .rolling(window=3)
+                    .mean()
+                )
+
+            elif calc_type == "Rolling Sum":
+
+                df[new_measure_name] = (
+                    df[measure1]
+                    .rolling(window=3)
+                    .sum()
+                )
+
+            # ---------------- WINDOW ----------------
+
+            elif calc_type == "Lag":
+
+                df[new_measure_name] = (
+                    df[measure1]
+                    .shift(1)
+                )
+
+            elif calc_type == "Lead":
+
+                df[new_measure_name] = (
+                    df[measure1]
+                    .shift(-1)
+                )
+
+            # ---------------- CONDITIONAL ----------------
+
+            elif calc_type == "High/Low Category":
+
+                avg = (
+                    df[measure1]
+                    .mean()
+                )
+
+                df[new_measure_name] = np.where(
+                    df[measure1] > avg,
+                    "High",
+                    "Low"
+                )
+
+            # ---------------- FINANCE ----------------
+
+            elif calc_type == "Margin %":
+
+                df[new_measure_name] = (
+                    (
+                        df[measure1]
+                        - df[measure2]
+                    )
+                    / df[measure1]
+                ) * 100
+
+            elif calc_type == "Tax Calculation":
+
+                df[new_measure_name] = (
+                    df[measure1]
+                    * 0.18
+                )
+
+            elif calc_type == "Discount Calculation":
+
+                df[new_measure_name] = (
+                    df[measure1]
+                    * 0.10
+                )
+
+            # ---------------- ANALYTICS ----------------
+
+            elif calc_type == "Percentile":
+
+                df[new_measure_name] = (
+                    df[measure1]
+                    .rank(pct=True)
                     * 100
+                )
+
+            elif calc_type == "Normalized Score":
+
+                min_val = (
+                    df[measure1]
+                    .min()
+                )
+
+                max_val = (
+                    df[measure1]
+                    .max()
+                )
+
+                df[new_measure_name] = (
+                    (
+                        df[measure1]
+                        - min_val
+                    )
+                    /
+                    (
+                        max_val
+                        - min_val
+                    )
                 )
 
             # ---------------- SUCCESS ----------------
@@ -210,7 +501,7 @@ if uploaded_file is not None:
                 f"{new_measure_name} created successfully"
             )
 
-            # Show updated table
+            # ---------------- UPDATED DATA ----------------
             st.subheader("Updated Dataset")
 
             st.dataframe(
