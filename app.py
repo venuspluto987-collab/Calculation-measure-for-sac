@@ -1,4 +1,3 @@
-```python
 # =====================================================
 # SAC STYLE ANALYTICS + PLANNING APP
 # UPDATED ENTERPRISE VERSION
