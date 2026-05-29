@@ -1,5 +1,7 @@
+```python
 # =====================================================
 # SAC STYLE ANALYTICS + PLANNING APP
+# UPDATED ENTERPRISE VERSION
 # =====================================================
 
 import streamlit as st
@@ -16,6 +18,14 @@ st.set_page_config(
     page_icon="📊",
     layout="wide"
 )
+
+# =====================================================
+# SESSION STATE
+# =====================================================
+
+if "df" not in st.session_state:
+
+    st.session_state.df = None
 
 # =====================================================
 # LOAD CSS
@@ -79,30 +89,38 @@ uploaded_file = st.file_uploader(
     type=["csv", "xlsx"]
 )
 
-# =====================================================
-# MAIN
-# =====================================================
-
 if uploaded_file is not None:
-
-    # =====================================================
-    # READ FILE
-    # =====================================================
 
     try:
 
         if uploaded_file.name.endswith(".csv"):
 
-            df = pd.read_csv(uploaded_file)
+            st.session_state.df = pd.read_csv(
+                uploaded_file
+            )
 
         else:
 
-            df = pd.read_excel(uploaded_file)
+            st.session_state.df = pd.read_excel(
+                uploaded_file
+            )
 
     except Exception as e:
 
         st.error(f"File Error: {e}")
         st.stop()
+
+# =====================================================
+# MAIN DATAFRAME
+# =====================================================
+
+df = st.session_state.df
+
+# =====================================================
+# MAIN
+# =====================================================
+
+if df is not None:
 
     # =====================================================
     # EMPTY DATA CHECK
@@ -149,34 +167,11 @@ if uploaded_file is not None:
 
         with col1:
 
-            st.markdown(
-                """
-                <div class="card">
-                <div class="card-title">
-                    Dimensions
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+            st.markdown("### Dimensions")
 
-            if len(dimensions) > 0:
+            for d in dimensions:
 
-                for d in dimensions:
-
-                    st.markdown(
-                        f"""
-                        <div class="dimension-item">
-                            {d}
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-
-            else:
-
-                st.info("No dimensions found")
-
-            st.markdown("</div>", unsafe_allow_html=True)
+                st.write("•", d)
 
         # =====================================================
         # MEASURES
@@ -184,37 +179,14 @@ if uploaded_file is not None:
 
         with col2:
 
-            st.markdown(
-                """
-                <div class="card">
-                <div class="card-title">
-                    Measures
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+            st.markdown("### Measures")
 
-            if len(measures) > 0:
+            for m in measures:
 
-                for m in measures:
-
-                    st.markdown(
-                        f"""
-                        <div class="measure-item">
-                            {m}
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-
-            else:
-
-                st.info("No measures found")
-
-            st.markdown("</div>", unsafe_allow_html=True)
+                st.write("•", m)
 
         # =====================================================
-        # DATA PREVIEW
+        # PREVIEW
         # =====================================================
 
         st.subheader("Preview Data")
@@ -226,7 +198,7 @@ if uploaded_file is not None:
         )
 
         # =====================================================
-        # SAC CALCULATIONS ENGINE
+        # SAC CALCULATIONS
         # =====================================================
 
         st.subheader("SAC Calculations")
@@ -241,6 +213,7 @@ if uploaded_file is not None:
                 "Percentage",
                 "Growth %",
                 "Running Total",
+                "Moving Average",
                 "Rank",
                 "Variance",
                 "Variance %",
@@ -248,6 +221,10 @@ if uploaded_file is not None:
                 "Min",
                 "Max",
                 "Count",
+                "Median",
+                "Standard Deviation",
+                "Log",
+                "Square Root",
                 "IF Condition",
                 "Custom Formula"
             ]
@@ -271,7 +248,7 @@ if uploaded_file is not None:
         )
 
         # =====================================================
-        # IF CONDITION OPTIONS
+        # IF CONDITION
         # =====================================================
 
         if calc_type == "IF Condition":
@@ -305,6 +282,8 @@ if uploaded_file is not None:
         # =====================================================
         # CUSTOM FORMULA
         # =====================================================
+
+        formula = ""
 
         if calc_type == "Custom Formula":
 
@@ -373,6 +352,14 @@ if uploaded_file is not None:
                         .cumsum()
                     )
 
+                elif calc_type == "Moving Average":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        .rolling(3)
+                        .mean()
+                    )
+
                 elif calc_type == "Rank":
 
                     df[calc_name] = (
@@ -431,6 +418,32 @@ if uploaded_file is not None:
                         .count()
                     )
 
+                elif calc_type == "Median":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        .median()
+                    )
+
+                elif calc_type == "Standard Deviation":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        .std()
+                    )
+
+                elif calc_type == "Log":
+
+                    df[calc_name] = np.log1p(
+                        df[measure1]
+                    )
+
+                elif calc_type == "Square Root":
+
+                    df[calc_name] = np.sqrt(
+                        df[measure1]
+                    )
+
                 elif calc_type == "IF Condition":
 
                     if condition_operator == ">":
@@ -475,9 +488,7 @@ if uploaded_file is not None:
 
                 elif calc_type == "Custom Formula":
 
-                    df[calc_name] = (
-                        df.eval(formula)
-                    )
+                    df[calc_name] = df.eval(formula)
 
                 # =====================================================
                 # ROUND
@@ -487,6 +498,12 @@ if uploaded_file is not None:
                     df[calc_name]
                     .round(2)
                 )
+
+                # =====================================================
+                # SAVE SESSION
+                # =====================================================
+
+                st.session_state.df = df
 
                 st.success(
                     f"{calc_name} created successfully"
@@ -511,50 +528,34 @@ if uploaded_file is not None:
 
         st.subheader("Story Dashboard")
 
-        if len(measures) == 0:
-
-            st.warning(
-                "No numeric measures found"
-            )
-
-            st.stop()
-
-        if len(dimensions) == 0:
-
-            st.warning(
-                "No dimensions found"
-            )
-
-            st.stop()
-
         k1, k2, k3, k4 = st.columns(4)
 
         with k1:
 
             st.metric(
-                f"Total {measures[0]}",
-                round(df[measures[0]].sum(), 2)
+                "Rows",
+                len(df)
             )
 
         with k2:
 
             st.metric(
-                f"Average {measures[0]}",
-                round(df[measures[0]].mean(), 2)
+                "Measures",
+                len(measures)
             )
 
         with k3:
 
             st.metric(
-                f"Max {measures[0]}",
-                round(df[measures[0]].max(), 2)
+                "Dimensions",
+                len(dimensions)
             )
 
         with k4:
 
             st.metric(
-                f"Min {measures[0]}",
-                round(df[measures[0]].min(), 2)
+                "Columns",
+                len(df.columns)
             )
 
         st.subheader("Chart Builder")
@@ -575,43 +576,40 @@ if uploaded_file is not None:
                 "Bar",
                 "Line",
                 "Pie",
-                "Area"
+                "Area",
+                "Scatter",
+                "Histogram",
+                "Box"
             ]
         )
 
-        fig = None
-
         if chart_type == "Bar":
 
-            fig = px.bar(
-                df,
-                x=x_axis,
-                y=y_axis
-            )
+            fig = px.bar(df, x=x_axis, y=y_axis)
 
         elif chart_type == "Line":
 
-            fig = px.line(
-                df,
-                x=x_axis,
-                y=y_axis
-            )
+            fig = px.line(df, x=x_axis, y=y_axis)
 
         elif chart_type == "Pie":
 
-            fig = px.pie(
-                df,
-                names=x_axis,
-                values=y_axis
-            )
+            fig = px.pie(df, names=x_axis, values=y_axis)
 
         elif chart_type == "Area":
 
-            fig = px.area(
-                df,
-                x=x_axis,
-                y=y_axis
-            )
+            fig = px.area(df, x=x_axis, y=y_axis)
+
+        elif chart_type == "Scatter":
+
+            fig = px.scatter(df, x=x_axis, y=y_axis)
+
+        elif chart_type == "Histogram":
+
+            fig = px.histogram(df, x=y_axis)
+
+        elif chart_type == "Box":
+
+            fig = px.box(df, x=x_axis, y=y_axis)
 
         st.plotly_chart(
             fig,
@@ -640,6 +638,10 @@ if uploaded_file is not None:
             ]
         )
 
+        # =====================================================
+        # COPY MODEL
+        # =====================================================
+
         if planning_type == "Copy Model":
 
             source_measure = st.selectbox(
@@ -667,12 +669,18 @@ if uploaded_file is not None:
                     )
                 ).round(2)
 
+                st.session_state.df = df
+
                 st.success("Copy Completed")
 
                 st.dataframe(
                     df,
                     use_container_width=True
                 )
+
+        # =====================================================
+        # ALLOCATION
+        # =====================================================
 
         elif planning_type == "Allocation":
 
@@ -706,6 +714,8 @@ if uploaded_file is not None:
                     * allocation_amount
                 ).round(2)
 
+                st.session_state.df = df
+
                 st.success(
                     "Allocation Completed"
                 )
@@ -714,6 +724,98 @@ if uploaded_file is not None:
                     df,
                     use_container_width=True
                 )
+
+        # =====================================================
+        # FACT DELETION
+        # =====================================================
+
+        elif planning_type == "Fact Deletion":
+
+            delete_measure = st.selectbox(
+                "Measure",
+                measures
+            )
+
+            condition = st.selectbox(
+                "Condition",
+                [
+                    "<",
+                    ">",
+                    "=",
+                    "<=",
+                    ">="
+                ]
+            )
+
+            threshold = st.number_input(
+                "Threshold Value",
+                value=1000.0
+            )
+
+            if st.button("Run Fact Deletion"):
+
+                try:
+
+                    original_rows = len(df)
+
+                    if condition == "<":
+
+                        updated_df = df[
+                            df[delete_measure]
+                            >= threshold
+                        ]
+
+                    elif condition == ">":
+
+                        updated_df = df[
+                            df[delete_measure]
+                            <= threshold
+                        ]
+
+                    elif condition == "=":
+
+                        updated_df = df[
+                            df[delete_measure]
+                            != threshold
+                        ]
+
+                    elif condition == "<=":
+
+                        updated_df = df[
+                            df[delete_measure]
+                            > threshold
+                        ]
+
+                    elif condition == ">=":
+
+                        updated_df = df[
+                            df[delete_measure]
+                            < threshold
+                        ]
+
+                    df = updated_df.copy()
+
+                    st.session_state.df = df
+
+                    deleted_rows = (
+                        original_rows
+                        - len(df)
+                    )
+
+                    st.success(
+                        f"{deleted_rows} rows deleted successfully"
+                    )
+
+                    st.dataframe(
+                        df,
+                        use_container_width=True
+                    )
+
+                except Exception as e:
+
+                    st.error(
+                        f"Fact Deletion Error: {e}"
+                    )
 
     # =====================================================
     # FORECAST PAGE
@@ -768,3 +870,4 @@ else:
     st.info(
         "Upload CSV or Excel File"
     )
+```
