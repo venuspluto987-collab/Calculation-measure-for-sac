@@ -1,3 +1,4 @@
+```python
 # =====================================================
 # SAC STYLE ANALYTICS + PLANNING APP
 # =====================================================
@@ -21,11 +22,18 @@ st.set_page_config(
 # LOAD CSS
 # =====================================================
 
-with open("styles.css") as f:
-    st.markdown(
-        f"<style>{f.read()}</style>",
-        unsafe_allow_html=True
-    )
+try:
+
+    with open("styles.css") as f:
+
+        st.markdown(
+            f"<style>{f.read()}</style>",
+            unsafe_allow_html=True
+        )
+
+except:
+
+    pass
 
 # =====================================================
 # SIDEBAR
@@ -85,14 +93,25 @@ if uploaded_file is not None:
     try:
 
         if uploaded_file.name.endswith(".csv"):
+
             df = pd.read_csv(uploaded_file)
 
         else:
+
             df = pd.read_excel(uploaded_file)
 
     except Exception as e:
 
         st.error(f"File Error: {e}")
+        st.stop()
+
+    # =====================================================
+    # EMPTY DATA CHECK
+    # =====================================================
+
+    if df.empty:
+
+        st.warning("Uploaded file is empty")
         st.stop()
 
     # =====================================================
@@ -125,7 +144,9 @@ if uploaded_file is not None:
 
         col1, col2 = st.columns(2)
 
-        # ---------------- DIMENSIONS ----------------
+        # =====================================================
+        # DIMENSIONS
+        # =====================================================
 
         with col1:
 
@@ -139,20 +160,28 @@ if uploaded_file is not None:
                 unsafe_allow_html=True
             )
 
-            for d in dimensions:
+            if len(dimensions) > 0:
 
-                st.markdown(
-                    f"""
-                    <div class="dimension-item">
-                        {d}
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+                for d in dimensions:
+
+                    st.markdown(
+                        f"""
+                        <div class="dimension-item">
+                            {d}
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+            else:
+
+                st.info("No dimensions found")
 
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # ---------------- MEASURES ----------------
+        # =====================================================
+        # MEASURES
+        # =====================================================
 
         with col2:
 
@@ -166,16 +195,22 @@ if uploaded_file is not None:
                 unsafe_allow_html=True
             )
 
-            for m in measures:
+            if len(measures) > 0:
 
-                st.markdown(
-                    f"""
-                    <div class="measure-item">
-                        {m}
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+                for m in measures:
+
+                    st.markdown(
+                        f"""
+                        <div class="measure-item">
+                            {m}
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+            else:
+
+                st.info("No measures found")
 
             st.markdown("</div>", unsafe_allow_html=True)
 
@@ -200,76 +235,94 @@ if uploaded_file is not None:
         st.subheader("Story Dashboard")
 
         # =====================================================
+        # CHECKS
+        # =====================================================
+
+        if len(measures) == 0:
+
+            st.warning(
+                "No numeric measures found in dataset"
+            )
+
+            st.stop()
+
+        if len(dimensions) == 0:
+
+            st.warning(
+                "No dimensions found in dataset"
+            )
+
+            st.stop()
+
+        # =====================================================
         # KPI CARDS
         # =====================================================
 
-        if len(measures) > 0:
+        k1, k2, k3, k4 = st.columns(4)
 
-            k1, k2, k3, k4 = st.columns(4)
+        with k1:
 
-            with k1:
-
-                st.markdown(
-                    f"""
-                    <div class="kpi-card">
-                        <div class="kpi-title">
-                            Total {measures[0]}
-                        </div>
-                        <div class="kpi-value">
-                            {round(df[measures[0]].sum(),2)}
-                        </div>
+            st.markdown(
+                f"""
+                <div class="kpi-card">
+                    <div class="kpi-title">
+                        Total {measures[0]}
                     </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-            with k2:
-
-                st.markdown(
-                    f"""
-                    <div class="kpi-card">
-                        <div class="kpi-title">
-                            Average {measures[0]}
-                        </div>
-                        <div class="kpi-value">
-                            {round(df[measures[0]].mean(),2)}
-                        </div>
+                    <div class="kpi-value">
+                        {round(df[measures[0]].sum(),2)}
                     </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-            with k3:
+        with k2:
 
-                st.markdown(
-                    f"""
-                    <div class="kpi-card">
-                        <div class="kpi-title">
-                            Max {measures[0]}
-                        </div>
-                        <div class="kpi-value">
-                            {round(df[measures[0]].max(),2)}
-                        </div>
+            st.markdown(
+                f"""
+                <div class="kpi-card">
+                    <div class="kpi-title">
+                        Average {measures[0]}
                     </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-            with k4:
-
-                st.markdown(
-                    f"""
-                    <div class="kpi-card">
-                        <div class="kpi-title">
-                            Min {measures[0]}
-                        </div>
-                        <div class="kpi-value">
-                            {round(df[measures[0]].min(),2)}
-                        </div>
+                    <div class="kpi-value">
+                        {round(df[measures[0]].mean(),2)}
                     </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        with k3:
+
+            st.markdown(
+                f"""
+                <div class="kpi-card">
+                    <div class="kpi-title">
+                        Max {measures[0]}
+                    </div>
+                    <div class="kpi-value">
+                        {round(df[measures[0]].max(),2)}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        with k4:
+
+            st.markdown(
+                f"""
+                <div class="kpi-card">
+                    <div class="kpi-title">
+                        Min {measures[0]}
+                    </div>
+                    <div class="kpi-value">
+                        {round(df[measures[0]].min(),2)}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
         # =====================================================
         # FILTERS
@@ -279,34 +332,34 @@ if uploaded_file is not None:
 
         filter_df = df.copy()
 
-        if len(dimensions) > 0:
+        f1, f2 = st.columns(2)
 
-            f1, f2 = st.columns(2)
+        with f1:
 
-            with f1:
+            selected_dimension = st.selectbox(
+                "Dimension",
+                dimensions
+            )
 
-                selected_dimension = st.selectbox(
-                    "Dimension",
-                    dimensions
-                )
+        with f2:
 
-            with f2:
-
-                selected_values = st.multiselect(
-                    "Values",
-                    filter_df[selected_dimension]
-                    .astype(str)
-                    .unique(),
-                    default=filter_df[selected_dimension]
-                    .astype(str)
-                    .unique()
-                )
-
-            filter_df = filter_df[
+            selected_values = st.multiselect(
+                "Values",
                 filter_df[selected_dimension]
                 .astype(str)
-                .isin(selected_values)
-            ]
+                .dropna()
+                .unique(),
+                default=filter_df[selected_dimension]
+                .astype(str)
+                .dropna()
+                .unique()
+            )
+
+        filter_df = filter_df[
+            filter_df[selected_dimension]
+            .astype(str)
+            .isin(selected_values)
+        ]
 
         # =====================================================
         # CHART BUILDER
@@ -319,14 +372,14 @@ if uploaded_file is not None:
         with c1:
 
             x_axis = st.selectbox(
-                "Dimension",
+                "X Axis",
                 dimensions
             )
 
         with c2:
 
             y_axis = st.selectbox(
-                "Measure",
+                "Y Axis",
                 measures
             )
 
@@ -348,42 +401,48 @@ if uploaded_file is not None:
 
         fig = None
 
-        if chart_type == "Bar":
+        try:
 
-            fig = px.bar(
-                filter_df,
-                x=x_axis,
-                y=y_axis
+            if chart_type == "Bar":
+
+                fig = px.bar(
+                    filter_df,
+                    x=x_axis,
+                    y=y_axis
+                )
+
+            elif chart_type == "Line":
+
+                fig = px.line(
+                    filter_df,
+                    x=x_axis,
+                    y=y_axis
+                )
+
+            elif chart_type == "Pie":
+
+                fig = px.pie(
+                    filter_df,
+                    names=x_axis,
+                    values=y_axis
+                )
+
+            elif chart_type == "Area":
+
+                fig = px.area(
+                    filter_df,
+                    x=x_axis,
+                    y=y_axis
+                )
+
+            st.plotly_chart(
+                fig,
+                use_container_width=True
             )
 
-        elif chart_type == "Line":
+        except Exception as e:
 
-            fig = px.line(
-                filter_df,
-                x=x_axis,
-                y=y_axis
-            )
-
-        elif chart_type == "Pie":
-
-            fig = px.pie(
-                filter_df,
-                names=x_axis,
-                values=y_axis
-            )
-
-        elif chart_type == "Area":
-
-            fig = px.area(
-                filter_df,
-                x=x_axis,
-                y=y_axis
-            )
-
-        st.plotly_chart(
-            fig,
-            use_container_width=True
-        )
+            st.error(f"Chart Error: {e}")
 
         # =====================================================
         # STORY TABLE
@@ -403,6 +462,14 @@ if uploaded_file is not None:
     elif menu == "Planning":
 
         st.subheader("Planning & Data Actions")
+
+        if len(measures) == 0:
+
+            st.warning(
+                "No numeric measures found"
+            )
+
+            st.stop()
 
         planning_type = st.selectbox(
             "Planning Function",
@@ -673,6 +740,14 @@ if uploaded_file is not None:
 
         st.subheader("Forecast Analysis")
 
+        if len(measures) == 0:
+
+            st.warning(
+                "No numeric measures found"
+            )
+
+            st.stop()
+
         forecast_measure = st.selectbox(
             "Measure",
             measures
@@ -718,3 +793,4 @@ else:
     st.info(
         "Upload CSV or Excel File"
     )
+```
