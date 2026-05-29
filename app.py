@@ -154,58 +154,116 @@ elif menu == "Planning":
         ["Version Conversion","Allocation","Copy","Data Action","Fact Delete"]
     )
 
-    # =====================================================
-    # VERSION CONVERSION (CORE FIXED FEATURE)
-    # =====================================================
+  
+# =====================================================
+# VERSION CONVERSION
+# =====================================================
 
-    if action == "Version Conversion":
+if action == "Version Conversion":
 
-        st.markdown("### 🔁 Version Conversion (SAC Style)")
+    st.markdown("### 🔁 Version Conversion")
 
-        version_col = st.selectbox("Version Column", df.columns)
+    version_col = st.selectbox(
+        "Version Column",
+        dimensions
+    )
 
-        df[version_col] = (
-            df[version_col]
-            .astype(str)
-            .str.strip()
-            .str.lower()
-        )
+    source_version = st.selectbox(
+        "Source Version",
+        sorted(df[version_col].astype(str).unique())
+    )
 
-        source_version = st.selectbox(
-            "Source Version",
-            df[version_col].unique()
-        )
+    target_version = st.text_input(
+        "Target Version",
+        "Budget"
+    )
 
-        target_version = st.selectbox(
-            "Target Version",
-            ["actual","budget","forecast","planning"]
-        )
+    measure = st.selectbox(
+        "Measure",
+        measures
+    )
 
-        measure = st.selectbox("Measure", measures)
+    adjust = st.number_input(
+        "Adjustment %",
+        value=0.0,
+        step=1.0
+    )
 
-        adjust = st.number_input("Adjustment %", 0.0)
+    mode = st.radio(
+        "Conversion Mode",
+        ["Create Column", "Create Version Rows"]
+    )
 
-        if st.button("Convert Version"):
+    if st.button("Convert Version"):
 
-            temp = df[df[version_col] == source_version].copy()
+        # -----------------------------------
+        # CREATE COLUMN
+        # -----------------------------------
+        if mode == "Create Column":
 
-            if temp.empty:
-                st.error("No data found for source version")
-                st.stop()
+            new_col = f"{target_version}_{measure}"
 
-            temp[version_col] = target_version
+            df[new_col] = np.where(
+                df[version_col].astype(str) == source_version,
+                df[measure] * (1 + adjust / 100),
+                0
+            )
 
-            temp[measure] = temp[measure] * (1 + adjust / 100)
-
-            df = pd.concat([df, temp], ignore_index=True)
-
-            df = df.loc[:, ~df.columns.duplicated()]
+            df[new_col] = (
+                pd.to_numeric(df[new_col], errors="coerce")
+                .fillna(0)
+                .round(2)
+            )
 
             st.session_state.df = df
 
-            st.success(f"{source_version} → {target_version} conversion done")
+            st.success(
+                f"Created column: {new_col}"
+            )
 
-            st.dataframe(df, use_container_width=True)
+            st.dataframe(
+                df,
+                use_container_width=True
+            )
+
+        # -----------------------------------
+        # CREATE VERSION ROWS (SAC STYLE)
+        # -----------------------------------
+        else:
+
+            temp = df[
+                df[version_col].astype(str) == source_version
+            ].copy()
+
+            if temp.empty:
+                st.error(
+                    "No matching source version found."
+                )
+
+            else:
+
+                temp[version_col] = target_version
+
+                temp[measure] = (
+                    temp[measure]
+                    * (1 + adjust / 100)
+                ).round(2)
+
+                result_df = pd.concat(
+                    [df, temp],
+                    ignore_index=True
+                )
+
+                st.session_state.df = result_df
+
+                st.success(
+                    f"{source_version} → {target_version} conversion completed"
+                )
+
+                st.dataframe(
+                    result_df,
+                    use_container_width=True
+                )
 
     # =====================================================
     # ALLOCATION
