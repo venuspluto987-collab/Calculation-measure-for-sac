@@ -1,6 +1,6 @@
 # =====================================================
 # SAC STYLE ANALYTICS + PLANNING APP
-# FULL ENTERPRISE VERSION
+# FULL ENTERPRISE VERSION WITH VERSION CONVERSION
 # =====================================================
 
 import streamlit as st
@@ -48,14 +48,7 @@ except:
 # SIDEBAR
 # =====================================================
 
-st.sidebar.markdown(
-    """
-    <div class="sidebar-title">
-        SAC Analytics
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.sidebar.title("SAC Analytics")
 
 menu = st.sidebar.radio(
     "Navigation",
@@ -71,14 +64,7 @@ menu = st.sidebar.radio(
 # TITLE
 # =====================================================
 
-st.markdown(
-    """
-    <div class="main-title">
-        SAC Planning & Analytics
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.title("📊 SAC Planning & Analytics")
 
 # =====================================================
 # FILE UPLOAD
@@ -111,29 +97,25 @@ if uploaded_file is not None:
         st.stop()
 
 # =====================================================
-# DATAFRAME
+# MAIN DATAFRAME
 # =====================================================
 
 df = st.session_state.df
 
 # =====================================================
-# MAIN
+# MAIN APP
 # =====================================================
 
 if df is not None:
-
-    # =====================================================
-    # EMPTY DATA CHECK
-    # =====================================================
 
     if df.empty:
 
         st.warning("Uploaded file is empty")
         st.stop()
 
-    # =====================================================
+    # =================================================
     # DETECT MEASURES / DIMENSIONS
-    # =====================================================
+    # =================================================
 
     measures = []
     dimensions = []
@@ -151,9 +133,9 @@ if df is not None:
 
             dimensions.append(col)
 
-    # =====================================================
+    # =================================================
     # MODEL PAGE
-    # =====================================================
+    # =================================================
 
     if menu == "Model":
 
@@ -183,15 +165,12 @@ if df is not None:
 
         st.dataframe(
             df,
-            use_container_width=True,
-            height=400
+            use_container_width=True
         )
 
-        st.divider()
-
-        # =====================================================
+        # =============================================
         # SAC CALCULATIONS
-        # =====================================================
+        # =============================================
 
         st.subheader("SAC Calculations")
 
@@ -492,9 +471,9 @@ if df is not None:
                     f"Calculation Error: {e}"
                 )
 
-    # =====================================================
+    # =================================================
     # STORY PAGE
-    # =====================================================
+    # =================================================
 
     elif menu == "Story":
 
@@ -503,19 +482,15 @@ if df is not None:
         k1, k2, k3, k4 = st.columns(4)
 
         with k1:
-
             st.metric("Rows", len(df))
 
         with k2:
-
             st.metric("Measures", len(measures))
 
         with k3:
-
             st.metric("Dimensions", len(dimensions))
 
         with k4:
-
             st.metric("Columns", len(df.columns))
 
         x_axis = st.selectbox(
@@ -579,9 +554,9 @@ if df is not None:
             use_container_width=True
         )
 
-    # =====================================================
+    # =================================================
     # PLANNING PAGE
-    # =====================================================
+    # =================================================
 
     elif menu == "Planning":
 
@@ -600,440 +575,170 @@ if df is not None:
             ]
         )
 
-        # =====================================================
+        # =============================================
         # VERSION MANAGEMENT
-        # =====================================================
+        # =============================================
 
         if planning_type == "Version Management":
-
-            version_type = st.selectbox(
-                "Version Type",
-                [
-                    "Actual",
-                    "Budget",
-                    "Forecast",
-                    "Planning"
-                ]
-            )
 
             version_column = st.text_input(
                 "Version Column",
                 "Version"
             )
 
-            if st.button("Create Version"):
+            version_action = st.selectbox(
+                "Version Action",
+                [
+                    "Create Version",
+                    "Convert Version"
+                ]
+            )
 
-                df[version_column] = version_type
+            # =========================================
+            # CREATE VERSION
+            # =========================================
 
-                st.session_state.df = df
+            if version_action == "Create Version":
 
-                st.success(
-                    f"{version_type} version created"
+                version_type = st.selectbox(
+                    "Version Type",
+                    [
+                        "Actual",
+                        "Budget",
+                        "Forecast",
+                        "Planning"
+                    ]
                 )
 
-                st.dataframe(
-                    df,
-                    use_container_width=True
-                )
+                if st.button("Create Version"):
 
-        # =====================================================
-        # COPY MODEL
-        # =====================================================
+                    df[version_column] = version_type
 
-        elif planning_type == "Copy Model":
+                    st.session_state.df = df
 
-            source_measure = st.selectbox(
-                "Source Measure",
-                measures
-            )
-
-            target_measure = st.text_input(
-                "Target Measure",
-                "Copied_Value"
-            )
-
-            increase_percent = st.number_input(
-                "Increase %",
-                value=0.0
-            )
-
-            if st.button("Run Copy"):
-
-                df[target_measure] = (
-                    df[source_measure]
-                    * (
-                        1
-                        + increase_percent / 100
+                    st.success(
+                        f"{version_type} version created"
                     )
-                ).round(2)
-
-                st.session_state.df = df
-
-                st.success("Copy Completed")
-
-                st.dataframe(
-                    df,
-                    use_container_width=True
-                )
-
-        # =====================================================
-        # ALLOCATION
-        # =====================================================
-
-        elif planning_type == "Allocation":
-
-            allocation_measure = st.selectbox(
-                "Driver Measure",
-                measures
-            )
-
-            allocation_amount = st.number_input(
-                "Allocation Amount",
-                value=100000.0
-            )
-
-            target_column = st.text_input(
-                "Allocated Column",
-                "Allocated_Value"
-            )
-
-            if st.button("Run Allocation"):
-
-                total = (
-                    df[allocation_measure]
-                    .sum()
-                )
-
-                df[target_column] = (
-                    (
-                        df[allocation_measure]
-                        / total
-                    )
-                    * allocation_amount
-                ).round(2)
-
-                st.session_state.df = df
-
-                st.success(
-                    "Allocation Completed"
-                )
-
-                st.dataframe(
-                    df,
-                    use_container_width=True
-                )
-
-        # =====================================================
-        # CROSS MODEL
-        # =====================================================
-
-        elif planning_type == "Cross Model":
-
-            uploaded_cross = st.file_uploader(
-                "Upload Cross Model",
-                type=["csv", "xlsx"],
-                key="cross_model"
-            )
-
-            if uploaded_cross is not None:
-
-                try:
-
-                    if uploaded_cross.name.endswith(".csv"):
-
-                        cross_df = pd.read_csv(
-                            uploaded_cross
-                        )
-
-                    else:
-
-                        cross_df = pd.read_excel(
-                            uploaded_cross
-                        )
 
                     st.dataframe(
-                        cross_df,
+                        df,
                         use_container_width=True
                     )
 
-                    common_columns = list(
-                        set(df.columns)
-                        &
-                        set(cross_df.columns)
+            # =========================================
+            # CONVERT VERSION
+            # =========================================
+
+            elif version_action == "Convert Version":
+
+                if version_column not in df.columns:
+
+                    st.warning(
+                        "Version column not found"
                     )
 
-                    if len(common_columns) > 0:
+                else:
 
-                        join_column = st.selectbox(
-                            "Join Column",
-                            common_columns
-                        )
+                    available_versions = (
+                        df[version_column]
+                        .astype(str)
+                        .unique()
+                        .tolist()
+                    )
 
-                        join_type = st.selectbox(
-                            "Join Type",
-                            [
-                                "left",
-                                "right",
-                                "inner",
-                                "outer"
-                            ]
-                        )
+                    source_version = st.selectbox(
+                        "Source Version",
+                        available_versions
+                    )
 
-                        if st.button(
-                            "Run Cross Model"
-                        ):
+                    target_version = st.selectbox(
+                        "Target Version",
+                        [
+                            "Actual",
+                            "Budget",
+                            "Forecast",
+                            "Planning"
+                        ]
+                    )
 
-                            merged_df = pd.merge(
-                                df,
-                                cross_df,
-                                on=join_column,
-                                how=join_type
+                    conversion_percent = st.number_input(
+                        "Adjustment %",
+                        value=0.0
+                    )
+
+                    selected_measure = st.selectbox(
+                        "Measure",
+                        measures
+                    )
+
+                    if st.button(
+                        "Convert Version"
+                    ):
+
+                        try:
+
+                            converted_df = df.copy()
+
+                            mask = (
+                                converted_df[
+                                    version_column
+                                ].astype(str)
+                                ==
+                                source_version
                             )
 
-                            st.session_state.df = merged_df
+                            new_rows = (
+                                converted_df[mask]
+                                .copy()
+                            )
+
+                            new_rows[
+                                version_column
+                            ] = target_version
+
+                            new_rows[
+                                selected_measure
+                            ] = (
+                                new_rows[
+                                    selected_measure
+                                ]
+                                * (
+                                    1
+                                    + conversion_percent
+                                    / 100
+                                )
+                            ).round(2)
+
+                            converted_df = pd.concat(
+                                [
+                                    converted_df,
+                                    new_rows
+                                ],
+                                ignore_index=True
+                            )
+
+                            st.session_state.df = (
+                                converted_df
+                            )
 
                             st.success(
-                                "Cross Model Completed"
+                                f"{source_version} converted to {target_version}"
                             )
 
                             st.dataframe(
-                                merged_df,
+                                converted_df,
                                 use_container_width=True
                             )
 
-                    else:
+                        except Exception as e:
 
-                        st.warning(
-                            "No common columns found"
-                        )
+                            st.error(
+                                f"Version Conversion Error: {e}"
+                            )
 
-                except Exception as e:
-
-                    st.error(
-                        f"Cross Model Error: {e}"
-                    )
-
-        # =====================================================
-        # FORECAST PLANNING
-        # =====================================================
-
-        elif planning_type == "Forecast Planning":
-
-            forecast_measure = st.selectbox(
-                "Forecast Measure",
-                measures
-            )
-
-            forecast_percent = st.slider(
-                "Forecast Increase %",
-                1,
-                100,
-                10
-            )
-
-            forecast_column = st.text_input(
-                "Forecast Column",
-                "Forecast_Value"
-            )
-
-            if st.button("Run Forecast Planning"):
-
-                df[forecast_column] = (
-                    df[forecast_measure]
-                    * (
-                        1
-                        + forecast_percent / 100
-                    )
-                ).round(2)
-
-                st.session_state.df = df
-
-                st.success(
-                    "Forecast Planning Completed"
-                )
-
-                st.dataframe(
-                    df,
-                    use_container_width=True
-                )
-
-        # =====================================================
-        # DATA ACTION
-        # =====================================================
-
-        elif planning_type == "Data Action":
-
-            data_action = st.selectbox(
-                "Data Action Type",
-                [
-                    "Increase Values",
-                    "Decrease Values",
-                    "Multiply Values",
-                    "Replace Null",
-                    "Convert Negative to Positive"
-                ]
-            )
-
-            action_measure = st.selectbox(
-                "Measure",
-                measures
-            )
-
-            action_value = st.number_input(
-                "Action Value",
-                value=10.0
-            )
-
-            if st.button("Run Data Action"):
-
-                try:
-
-                    if data_action == "Increase Values":
-
-                        df[action_measure] = (
-                            df[action_measure]
-                            + action_value
-                        )
-
-                    elif data_action == "Decrease Values":
-
-                        df[action_measure] = (
-                            df[action_measure]
-                            - action_value
-                        )
-
-                    elif data_action == "Multiply Values":
-
-                        df[action_measure] = (
-                            df[action_measure]
-                            * action_value
-                        )
-
-                    elif data_action == "Replace Null":
-
-                        df[action_measure] = (
-                            df[action_measure]
-                            .fillna(action_value)
-                        )
-
-                    elif data_action == "Convert Negative to Positive":
-
-                        df[action_measure] = np.abs(
-                            df[action_measure]
-                        )
-
-                    st.session_state.df = df
-
-                    st.success(
-                        "Data Action Completed"
-                    )
-
-                    st.dataframe(
-                        df,
-                        use_container_width=True
-                    )
-
-                except Exception as e:
-
-                    st.error(
-                        f"Data Action Error: {e}"
-                    )
-
-        # =====================================================
-        # FACT DELETION
-        # =====================================================
-
-        elif planning_type == "Fact Deletion":
-
-            delete_measure = st.selectbox(
-                "Measure",
-                measures
-            )
-
-            condition = st.selectbox(
-                "Condition",
-                [
-                    "<",
-                    ">",
-                    "=",
-                    "<=",
-                    ">="
-                ]
-            )
-
-            threshold = st.number_input(
-                "Threshold Value",
-                value=1000.0
-            )
-
-            if st.button("Run Fact Deletion"):
-
-                try:
-
-                    original_rows = len(df)
-
-                    if condition == "<":
-
-                        updated_df = df[
-                            df[delete_measure]
-                            >= threshold
-                        ]
-
-                    elif condition == ">":
-
-                        updated_df = df[
-                            df[delete_measure]
-                            <= threshold
-                        ]
-
-                    elif condition == "=":
-
-                        updated_df = df[
-                            df[delete_measure]
-                            != threshold
-                        ]
-
-                    elif condition == "<=":
-
-                        updated_df = df[
-                            df[delete_measure]
-                            > threshold
-                        ]
-
-                    elif condition == ">=":
-
-                        updated_df = df[
-                            df[delete_measure]
-                            < threshold
-                        ]
-
-                    df = updated_df.copy()
-
-                    st.session_state.df = df
-
-                    deleted_rows = (
-                        original_rows
-                        - len(df)
-                    )
-
-                    st.success(
-                        f"{deleted_rows} rows deleted successfully"
-                    )
-
-                    st.dataframe(
-                        df,
-                        use_container_width=True
-                    )
-
-                except Exception as e:
-
-                    st.error(
-                        f"Fact Deletion Error: {e}"
-                    )
-
-    # =====================================================
+    # =================================================
     # FORECAST PAGE
-    # =====================================================
+    # =================================================
 
     elif menu == "Forecast":
 
