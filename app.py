@@ -1,5 +1,6 @@
+```python id="final_sac_app_clean_ui"
 # =====================================================
-# SAC ANALYTICS + PLANNING + STORY BUILDER (FINAL)
+# SAC ANALYTICS CLOUD - FINAL CLEAN UI VERSION
 # =====================================================
 
 import streamlit as st
@@ -45,7 +46,7 @@ menu = st.sidebar.radio(
 st.title("📊 SAC Planning & Analytics Platform")
 
 # =====================================================
-# FILE UPLOAD
+# UPLOAD
 # =====================================================
 
 uploaded_file = st.file_uploader(
@@ -54,7 +55,6 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file is not None:
-
     if uploaded_file.name.endswith("csv"):
         st.session_state.df = pd.read_csv(uploaded_file)
     else:
@@ -63,11 +63,11 @@ if uploaded_file is not None:
 df = st.session_state.df
 
 # =====================================================
-# CHECK DATA
+# CHECK
 # =====================================================
 
 if df is None:
-    st.info("Upload a file to start")
+    st.info("Upload file to start")
     st.stop()
 
 if df.empty:
@@ -75,7 +75,7 @@ if df.empty:
     st.stop()
 
 # =====================================================
-# DETECT MEASURES / DIMENSIONS
+# DETECT MODEL
 # =====================================================
 
 measures = []
@@ -88,7 +88,7 @@ for c in df.columns:
         dimensions.append(c)
 
 # =====================================================
-# MODEL PAGE
+# MODEL PAGE (FIXED UI)
 # =====================================================
 
 if menu == "Model":
@@ -97,128 +97,58 @@ if menu == "Model":
 
     c1, c2 = st.columns(2)
 
+    # ================= DIMENSIONS =================
     with c1:
-        st.markdown("### Dimensions")
-        st.write(dimensions)
+        st.markdown("### 📁 Dimensions")
 
+        if len(dimensions) == 0:
+            st.info("No Dimensions Found")
+
+        for d in dimensions:
+            st.markdown(
+                f"""
+                <div style="
+                    padding:6px;
+                    margin:4px 0;
+                    border-radius:6px;
+                    background:#f0f2f6;
+                    font-size:14px;
+                ">
+                    📌 {d}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+    # ================= MEASURES =================
     with c2:
-        st.markdown("### Measures")
-        st.write(measures)
+        st.markdown("### 📊 Measures")
+
+        if len(measures) == 0:
+            st.info("No Measures Found")
+
+        for m in measures:
+            st.markdown(
+                f"""
+                <div style="
+                    padding:6px;
+                    margin:4px 0;
+                    border-radius:6px;
+                    background:#e8f4ff;
+                    font-size:14px;
+                ">
+                    📈 {m}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
     st.divider()
+    st.subheader("📄 Data Preview")
     st.dataframe(df, use_container_width=True)
 
-    # =================================================
-    # CALCULATIONS ENGINE
-    # =================================================
-
-    st.subheader("🧮 SAC Calculations")
-
-    calc_type = st.selectbox(
-        "Calculation Type",
-        [
-            "Addition","Subtraction","Multiplication","Division",
-            "Percentage","Growth %","Running Total","Moving Average",
-            "Rank","Variance","Variance %","Median","Std Dev",
-            "Min","Max","Count","Log","Sqrt",
-            "IF Condition","Custom Formula"
-        ]
-    )
-
-    calc_name = st.text_input("Calculated Column Name", "Calc")
-
-    m1 = st.selectbox("Measure 1", measures, key="m1")
-    m2 = st.selectbox("Measure 2", measures, key="m2")
-
-    formula = ""
-    if calc_type == "Custom Formula":
-        formula = st.text_input("Formula (use column names)")
-
-    if calc_type == "IF Condition":
-        op = st.selectbox("Condition", [">","<","=",">=","<="])
-        thr = st.number_input("Threshold", value=0.0)
-        t = st.number_input("True Value", value=1.0)
-        f = st.number_input("False Value", value=0.0)
-
-    if st.button("Run Calculation"):
-
-        if calc_type == "Addition":
-            df[calc_name] = df[m1] + df[m2]
-
-        elif calc_type == "Subtraction":
-            df[calc_name] = df[m1] - df[m2]
-
-        elif calc_type == "Multiplication":
-            df[calc_name] = df[m1] * df[m2]
-
-        elif calc_type == "Division":
-            df[calc_name] = np.where(df[m2]!=0, df[m1]/df[m2], 0)
-
-        elif calc_type == "Percentage":
-            df[calc_name] = (df[m1]/df[m1].sum())*100
-
-        elif calc_type == "Growth %":
-            df[calc_name] = df[m1].pct_change()*100
-
-        elif calc_type == "Running Total":
-            df[calc_name] = df[m1].cumsum()
-
-        elif calc_type == "Moving Average":
-            df[calc_name] = df[m1].rolling(3).mean()
-
-        elif calc_type == "Rank":
-            df[calc_name] = df[m1].rank(ascending=False)
-
-        elif calc_type == "Variance":
-            df[calc_name] = df[m1] - df[m2]
-
-        elif calc_type == "Variance %":
-            df[calc_name] = np.where(df[m2]!=0, ((df[m1]-df[m2])/df[m2])*100, 0)
-
-        elif calc_type == "Median":
-            df[calc_name] = df[m1].median()
-
-        elif calc_type == "Std Dev":
-            df[calc_name] = df[m1].std()
-
-        elif calc_type == "Min":
-            df[calc_name] = df[m1].min()
-
-        elif calc_type == "Max":
-            df[calc_name] = df[m1].max()
-
-        elif calc_type == "Count":
-            df[calc_name] = df[m1].count()
-
-        elif calc_type == "Log":
-            df[calc_name] = np.log1p(df[m1])
-
-        elif calc_type == "Sqrt":
-            df[calc_name] = np.sqrt(df[m1])
-
-        elif calc_type == "IF Condition":
-            if op == ">":
-                df[calc_name] = np.where(df[m1]>thr, t, f)
-            elif op == "<":
-                df[calc_name] = np.where(df[m1]<thr, t, f)
-            elif op == "=":
-                df[calc_name] = np.where(df[m1]==thr, t, f)
-            elif op == ">=":
-                df[calc_name] = np.where(df[m1]>=thr, t, f)
-            elif op == "<=":
-                df[calc_name] = np.where(df[m1]<=thr, t, f)
-
-        elif calc_type == "Custom Formula":
-            df[calc_name] = df.eval(formula)
-
-        df[calc_name] = pd.to_numeric(df[calc_name], errors="coerce").round(2)
-
-        st.session_state.df = df
-        st.success("Calculation created")
-        st.dataframe(df, use_container_width=True)
-
 # =====================================================
-# STORY BUILDER (FULL)
+# STORY BUILDER
 # =====================================================
 
 elif menu == "Story":
@@ -229,21 +159,19 @@ elif menu == "Story":
 
     left, right = st.columns(2)
 
-    # ================= LEFT =================
-
     with left:
 
         st.markdown("### 📁 Data Explorer")
 
         view = st.selectbox(
             "View",
-            ["Main Table","Calculated","Planning","Forecast"]
+            ["Main Table", "Calculated Fields", "Planning", "Forecast"]
         )
 
         if view == "Main Table":
             st.dataframe(df, use_container_width=True)
 
-        elif view == "Calculated":
+        elif view == "Calculated Fields":
             st.dataframe(df[calc_cols + measures], use_container_width=True)
 
         elif view == "Planning":
@@ -253,8 +181,6 @@ elif menu == "Story":
         elif view == "Forecast":
             fc = [c for c in df.columns if "forecast" in c.lower()]
             st.dataframe(df[fc + measures], use_container_width=True)
-
-    # ================= RIGHT =================
 
     with right:
 
@@ -303,7 +229,7 @@ elif menu == "Planning":
         ["Version","Copy","Allocation","Cross Model","Data Action","Fact Delete"]
     )
 
-    # VERSION FIXED
+    # ================= VERSION =================
     if func == "Version":
 
         col = st.text_input("Version Column", "Version")
@@ -336,24 +262,26 @@ elif menu == "Planning":
                 new = df[mask].copy()
 
                 new[col] = t
-                new[m] = new[m]*1.1
+                new[m] = new[m] * 1.1
 
-                df = pd.concat([df,new], ignore_index=True)
-
+                df = pd.concat([df, new], ignore_index=True)
                 st.session_state.df = df
+
                 st.success("Converted")
                 st.dataframe(df)
 
+    # ================= COPY =================
     elif func == "Copy":
 
         m = st.selectbox("Measure", measures)
         c = st.text_input("New Column", "Copy")
 
         if st.button("Run"):
-            df[c] = df[m]*1.1
+            df[c] = df[m] * 1.1
             st.session_state.df = df
             st.dataframe(df)
 
+    # ================= ALLOCATION =================
     elif func == "Allocation":
 
         m = st.selectbox("Driver", measures)
@@ -361,10 +289,11 @@ elif menu == "Planning":
         c = st.text_input("Column", "Alloc")
 
         if st.button("Run"):
-            df[c] = (df[m]/df[m].sum())*amt
+            df[c] = (df[m] / df[m].sum()) * amt
             st.session_state.df = df
             st.dataframe(df)
 
+    # ================= CROSS MODEL =================
     elif func == "Cross Model":
 
         f = st.file_uploader("Upload", type=["csv","xlsx"])
@@ -373,18 +302,18 @@ elif menu == "Planning":
 
             df2 = pd.read_csv(f) if f.name.endswith("csv") else pd.read_excel(f)
 
-            common = list(set(df.columns)&set(df2.columns))
+            common = list(set(df.columns) & set(df2.columns))
 
             if common:
 
-                j = st.selectbox("Join", common)
+                j = st.selectbox("Join Column", common)
 
                 if st.button("Merge"):
-
                     df = pd.merge(df, df2, on=j)
                     st.session_state.df = df
                     st.dataframe(df)
 
+    # ================= DATA ACTION =================
     elif func == "Data Action":
 
         m = st.selectbox("Measure", measures)
@@ -395,6 +324,7 @@ elif menu == "Planning":
             st.session_state.df = df
             st.dataframe(df)
 
+    # ================= FACT DELETE =================
     elif func == "Fact Delete":
 
         m = st.selectbox("Measure", measures)
@@ -425,7 +355,7 @@ elif menu == "Forecast":
     p = st.slider("Growth %", 1, 100, 10)
 
     fdf = df.copy()
-    fdf["Forecast"] = fdf[m]*(1+p/100)
+    fdf["Forecast"] = fdf[m] * (1 + p / 100)
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(y=fdf[m], name="Actual"))
@@ -437,3 +367,4 @@ elif menu == "Forecast":
 else:
 
     st.info("Upload file")
+```
