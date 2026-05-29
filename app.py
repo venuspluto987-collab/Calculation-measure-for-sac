@@ -1,4 +1,3 @@
-```python id="final_sac_app_clean_ui"
 # =====================================================
 # SAC ANALYTICS CLOUD - FINAL CLEAN UI VERSION
 # =====================================================
@@ -367,4 +366,3 @@ elif menu == "Forecast":
 else:
 
     st.info("Upload file")
-```
