@@ -1,0 +1,143 @@
+/* ---------------- MAIN APP ---------------- */
+
+.stApp {
+    background-color: #f4f5f7;
+    font-family: Arial, sans-serif;
+    color: #333;
+}
+
+/* ---------------- TITLE ---------------- */
+
+h1 {
+    color: #4a4a4a;
+    font-size: 40px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+/* ---------------- FILE UPLOADER ---------------- */
+
+[data-testid="stFileUploader"] {
+    background-color: white;
+    padding: 20px;
+    border-radius: 14px;
+    border: 1px solid #dcdcdc;
+    margin-bottom: 20px;
+}
+
+/* ---------------- SUBHEADERS ---------------- */
+
+h2, h3 {
+    color: #555;
+    margin-top: 25px;
+    margin-bottom: 15px;
+}
+
+/* ---------------- DATAFRAME ---------------- */
+
+[data-testid="stDataFrame"] {
+    background-color: white;
+    border-radius: 14px;
+    padding: 10px;
+    border: 1px solid #ddd;
+}
+
+/* ---------------- SELECTBOX ---------------- */
+
+div[data-baseweb="select"] {
+    background-color: white;
+    border-radius: 10px;
+}
+
+/* ---------------- INPUT BOX ---------------- */
+
+input {
+    border-radius: 10px !important;
+}
+
+/* ---------------- BUTTON ---------------- */
+
+.stButton > button {
+    background-color: #1f77ff;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 25px;
+    font-size: 16px;
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+/* Hover */
+.stButton > button:hover {
+    background-color: #005ce6;
+    color: white;
+}
+
+/* ---------------- SUCCESS MESSAGE ---------------- */
+
+.stSuccess {
+    border-radius: 10px;
+}
+
+/* ---------------- INFO MESSAGE ---------------- */
+
+.stInfo {
+    border-radius: 10px;
+}
+
+/* ---------------- ERROR MESSAGE ---------------- */
+
+.stError {
+    border-radius: 10px;
+}
+
+/* ---------------- COLUMN SPACE ---------------- */
+
+div[data-testid="column"] {
+    padding: 5px;
+}
+
+/* ---------------- SCROLLBAR ---------------- */
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+/* ---------------- TABLE HEADER ---------------- */
+
+thead tr th {
+    background-color: #f0f2f5 !important;
+    color: #333 !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+}
+
+/* ---------------- TABLE ROW ---------------- */
+
+tbody tr:hover {
+    background-color: #f9fbfd !important;
+}
+
+/* ---------------- TEXT INPUT ---------------- */
+
+.stTextInput > div > div > input {
+    background-color: white;
+}
+
+/* ---------------- SELECT LABEL ---------------- */
+
+label {
+    font-weight: 600 !important;
+    color: #444 !important;
+}
