@@ -1,4 +1,3 @@
-```python id="sac_full_app_final"
 # =====================================================
 # SAC ANALYTICS + PLANNING + STORY BUILDER (FINAL)
 # =====================================================
@@ -438,4 +437,3 @@ elif menu == "Forecast":
 else:
 
     st.info("Upload file")
-```
