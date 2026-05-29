@@ -1,5 +1,5 @@
 # =====================================================
-# SAC ANALYTICS CLOUD - FULL WORKING APP
+# SAC ANALYTICS CLOUD - FULL WORKING APP (FIXED)
 # =====================================================
 
 import streamlit as st
@@ -25,8 +25,6 @@ st.set_page_config(
 if "df" not in st.session_state:
     st.session_state.df = None
 
-df = st.session_state.df
-
 # =====================================================
 # SIDEBAR
 # =====================================================
@@ -45,7 +43,10 @@ st.title("📊 SAC Analytics Cloud")
 file = st.file_uploader("Upload CSV or Excel", type=["csv", "xlsx"])
 
 if file:
-    df = pd.read_csv(file) if file.name.endswith("csv") else pd.read_excel(file)
+    if file.name.endswith("csv"):
+        df = pd.read_csv(file)
+    else:
+        df = pd.read_excel(file)
 
     # SAFE CLEAN
     df = df.loc[:, ~df.columns.duplicated()]
@@ -65,6 +66,10 @@ if df is None:
 
 measures = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
 dimensions = [c for c in df.columns if c not in measures]
+
+if len(measures) == 0 or len(dimensions) == 0:
+    st.warning("Need at least 1 numeric column and 1 text column")
+    st.stop()
 
 # =====================================================
 # MODEL PAGE
@@ -90,7 +95,7 @@ if menu == "Model":
 
     st.subheader("🧮 Calculation")
 
-    calc = st.selectbox("Type", ["Add","Subtract","Multiply","Divide"])
+    calc = st.selectbox("Type", ["Add", "Subtract", "Multiply", "Divide"])
     new_col = st.text_input("New Column", "Calc")
 
     m1 = st.selectbox("Measure 1", measures)
@@ -100,14 +105,11 @@ if menu == "Model":
 
         if calc == "Add":
             df[new_col] = df[m1] + df[m2]
-
         elif calc == "Subtract":
             df[new_col] = df[m1] - df[m2]
-
         elif calc == "Multiply":
             df[new_col] = df[m1] * df[m2]
-
-        elif calc == "Divide":
+        else:
             df[new_col] = np.where(df[m2] != 0, df[m1] / df[m2], 0)
 
         df[new_col] = pd.to_numeric(df[new_col], errors="coerce").round(2)
@@ -127,7 +129,7 @@ elif menu == "Story":
     x = st.selectbox("X Axis", dimensions)
     y = st.selectbox("Y Axis", measures)
 
-    chart = st.selectbox("Chart Type", ["Bar","Line","Pie","Scatter"])
+    chart = st.selectbox("Chart Type", ["Bar", "Line", "Pie", "Scatter"])
 
     if chart == "Bar":
         fig = px.bar(df, x=x, y=y)
@@ -142,7 +144,7 @@ elif menu == "Story":
     st.dataframe(df, use_container_width=True)
 
 # =====================================================
-# PLANNING PAGE (FULL VERSION CONTROL WORKING)
+# PLANNING PAGE
 # =====================================================
 
 elif menu == "Planning":
@@ -151,134 +153,66 @@ elif menu == "Planning":
 
     action = st.selectbox(
         "Function",
-        ["Version Conversion","Allocation","Copy","Data Action","Fact Delete"]
+        ["Version Conversion", "Allocation", "Copy", "Data Action", "Fact Delete"]
     )
 
-# =====================================================
-# VERSION CONVERSION
-# =====================================================
+    # =====================================================
+    # VERSION CONVERSION
+    # =====================================================
 
-if action == "Version Conversion":
+    if action == "Version Conversion":
 
-    st.markdown("### 🔁 Version Conversion")
+        st.markdown("### 🔁 Version Conversion")
 
-    # Select Dimension
-    dimension_col = st.selectbox(
-        "Source Dimension",
-        dimensions
-    )
+        dimension_col = st.selectbox("Source Dimension", dimensions)
 
-    # All + Members
-    members = ["All"] + sorted(
-        df[dimension_col].astype(str).unique().tolist()
-    )
+        members = ["All"] + sorted(df[dimension_col].astype(str).unique().tolist())
+        selected_member = st.selectbox("Member", members)
 
-    selected_member = st.selectbox(
-        "Member",
-        members
-    )
+        target_version = st.selectbox("Target Version", ["Budget", "Forecast", "Planning"])
+        measure = st.selectbox("Measure", measures)
 
-    target_version = st.selectbox(
-        "Target Version",
-        ["Budget", "Forecast", "Planning"]
-    )
+        adjust = st.number_input("Adjustment %", value=0.0, step=1.0)
 
-    measure = st.selectbox(
-        "Measure",
-        measures
-    )
+        mode = st.radio("Conversion Mode", ["Create Column", "Create Version Rows"])
 
-    adjust = st.number_input(
-        "Adjustment %",
-        value=0.0,
-        step=1.0
-    )
+        if st.button("Convert Version"):
 
-    mode = st.radio(
-        "Conversion Mode",
-        ["Create Column", "Create Version Rows"]
-    )
+            if mode == "Create Column":
 
-    if st.button("Convert Version"):
+                new_col = f"{target_version}_{measure}"
 
-        # =================================================
-        # CREATE COLUMN
-        # =================================================
-        if mode == "Create Column":
+                if selected_member == "All":
+                    df[new_col] = (df[measure] * (1 + adjust / 100)).round(2)
+                else:
+                    df[new_col] = np.where(
+                        df[dimension_col].astype(str) == selected_member,
+                        df[measure] * (1 + adjust / 100),
+                        0
+                    )
 
-            new_col = f"{target_version}_{measure}"
-
-            if selected_member == "All":
-
-                df[new_col] = (
-                    df[measure] * (1 + adjust / 100)
-                ).round(2)
+                st.session_state.df = df
+                st.success(f"{new_col} created successfully")
+                st.dataframe(df, use_container_width=True)
 
             else:
 
-                df[new_col] = np.where(
-                    df[dimension_col].astype(str) == selected_member,
-                    df[measure] * (1 + adjust / 100),
-                    0
-                )
-
-            st.session_state.df = df
-
-            st.success(
-                f"{new_col} created successfully"
-            )
-
-            st.dataframe(
-                df,
-                use_container_width=True
-            )
-
-        # =================================================
-        # SAC STYLE VERSION ROWS
-        # =================================================
-        else:
-
-            if selected_member == "All":
-
-                temp = df.copy()
-
-            else:
-
-                temp = df[
-                    df[dimension_col].astype(str)
-                    == selected_member
+                temp = df.copy() if selected_member == "All" else df[
+                    df[dimension_col].astype(str) == selected_member
                 ].copy()
 
-            if temp.empty:
+                if temp.empty:
+                    st.error("No matching records found.")
+                else:
+                    temp["Version"] = target_version
+                    temp[measure] = (temp[measure] * (1 + adjust / 100)).round(2)
 
-                st.error(
-                    "No matching records found."
-                )
+                    result_df = pd.concat([df, temp], ignore_index=True)
 
-            else:
+                    st.session_state.df = result_df
+                    st.success(f"{target_version} version created successfully")
+                    st.dataframe(result_df, use_container_width=True)
 
-                temp["Version"] = target_version
-
-                temp[measure] = (
-                    temp[measure]
-                    * (1 + adjust / 100)
-                ).round(2)
-
-                result_df = pd.concat(
-                    [df, temp],
-                    ignore_index=True
-                )
-
-                st.session_state.df = result_df
-
-                st.success(
-                    f"{target_version} version created successfully"
-                )
-
-                st.dataframe(
-                    result_df,
-                    use_container_width=True
-                )
     # =====================================================
     # ALLOCATION
     # =====================================================
@@ -290,7 +224,6 @@ if action == "Version Conversion":
         c = st.text_input("Column", "Alloc")
 
         if st.button("Run"):
-
             df[c] = (df[m] / df[m].sum()) * amt
             st.session_state.df = df
             st.dataframe(df)
@@ -305,7 +238,6 @@ if action == "Version Conversion":
         c = st.text_input("New Column", "Copy")
 
         if st.button("Run"):
-
             df[c] = df[m] * 1.1
             st.session_state.df = df
             st.dataframe(df)
@@ -320,7 +252,6 @@ if action == "Version Conversion":
         v = st.number_input("Add Value", 10.0)
 
         if st.button("Run"):
-
             df[m] = df[m] + v
             st.session_state.df = df
             st.dataframe(df)
@@ -332,7 +263,7 @@ if action == "Version Conversion":
     elif action == "Fact Delete":
 
         m = st.selectbox("Measure", measures)
-        op = st.selectbox("Condition", ["<",">","="])
+        op = st.selectbox("Condition", ["<", ">", "="])
         t = st.number_input("Threshold", 100.0)
 
         if st.button("Run"):
@@ -368,6 +299,9 @@ elif menu == "Forecast":
     st.plotly_chart(fig, use_container_width=True)
     st.dataframe(fdf)
 
-else:
+# =====================================================
+# SAFETY FALLBACK
+# =====================================================
 
+else:
     st.info("Upload file to start")
