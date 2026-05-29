@@ -294,11 +294,173 @@ elif menu == "Story":
 # =====================================================
 # PLANNING PAGE (MINIMAL SAFE)
 # =====================================================
+# =====================================================
+# PLANNING PAGE (SAC-STYLE FULL ENGINE)
+# =====================================================
 
 elif menu == "Planning":
-    st.subheader("📌 Planning Engine (Coming Extension)")
-    st.info("Advanced SAC planning features can be added here (allocations, versions, write-back).")
 
+    st.subheader("📌 SAC Planning Engine")
+
+    action = st.selectbox(
+        "Planning Action",
+        [
+            "Copy Model",
+            "Cross Model Copy",
+            "Version Conversion",
+            "Allocation",
+            "Fact Deletion"
+        ]
+    )
+
+    df = st.session_state.df
+
+    # =====================================================
+    # COPY MODEL
+    # =====================================================
+    if action == "Copy Model":
+
+        st.markdown("### 📄 Copy Model (Duplicate Dataset)")
+
+        new_name = st.text_input("New Model Name", "Model_Copy")
+
+        if st.button("Copy Model"):
+
+            st.session_state[new_name] = df.copy()
+
+            st.success(f"Model '{new_name}' created successfully")
+            st.dataframe(st.session_state[new_name], use_container_width=True)
+
+    # =====================================================
+    # CROSS MODEL COPY
+    # =====================================================
+    elif action == "Cross Model Copy":
+
+        st.markdown("### 🔀 Cross Model Copy (Source → Target Model)")
+
+        target_model = st.text_input("Target Model Name", "Target_Model")
+
+        col_map = {}
+
+        st.write("Map Columns (Source → Target)")
+
+        for col in df.columns:
+            col_map[col] = st.text_input(f"{col} →", value=col)
+
+        if st.button("Execute Cross Model Copy"):
+
+            new_df = df.rename(columns=col_map).copy()
+
+            st.session_state[target_model] = new_df
+
+            st.success(f"Cross model '{target_model}' created")
+            st.dataframe(new_df, use_container_width=True)
+
+    # =====================================================
+    # VERSION CONVERSION
+    # =====================================================
+    elif action == "Version Conversion":
+
+        st.markdown("### 🔄 Version Conversion (Actual → Budget / Forecast)")
+
+        version_col = st.selectbox("Version Column (if exists)", dimensions + ["None"])
+
+        measure = st.selectbox("Measure", measures)
+
+        target_version = st.selectbox(
+            "Target Version",
+            ["Actual", "Budget", "Forecast", "Planning"]
+        )
+
+        adjust = st.number_input("Adjustment %", value=0.0)
+
+        if st.button("Convert Version"):
+
+            temp = df.copy()
+
+            if version_col != "None":
+                temp["Version"] = target_version
+            else:
+                temp["Version"] = target_version
+
+            temp[measure] = temp[measure] * (1 + adjust / 100)
+
+            df = pd.concat([df, temp], ignore_index=True)
+
+            st.session_state.df = df
+
+            st.success(f"Converted to {target_version}")
+            st.dataframe(df, use_container_width=True)
+
+    # =====================================================
+    # ALLOCATION ENGINE
+    # =====================================================
+    elif action == "Allocation":
+
+        st.markdown("### 📊 Driver Based Allocation")
+
+        measure = st.selectbox("Base Measure", measures)
+
+        total_amount = st.number_input("Total Amount to Allocate", 100000.0)
+
+        method = st.selectbox(
+            "Allocation Method",
+            ["Equal Split", "Proportional (by measure)", "Custom Weight"]
+        )
+
+        new_col = st.text_input("Output Column", "Allocated_Value")
+
+        if st.button("Run Allocation"):
+
+            if method == "Equal Split":
+                df[new_col] = total_amount / len(df)
+
+            elif method == "Proportional (by measure)":
+                df[new_col] = (df[measure] / df[measure].sum()) * total_amount
+
+            elif method == "Custom Weight":
+                weight_col = st.selectbox("Weight Column", measures)
+                df[new_col] = (df[weight_col] / df[weight_col].sum()) * total_amount
+
+            st.session_state.df = df
+
+            st.success("Allocation completed")
+            st.dataframe(df, use_container_width=True)
+
+    # =====================================================
+    # FACT DELETION
+    # =====================================================
+    elif action == "Fact Deletion":
+
+        st.markdown("### 🧹 Fact Deletion Engine")
+
+        measure = st.selectbox("Measure", measures)
+
+        condition = st.selectbox("Condition", ["<", ">", "=", "<=", ">="])
+
+        threshold = st.number_input("Threshold Value", 0.0)
+
+        if st.button("Delete Facts"):
+
+            if condition == "<":
+                df = df[df[measure] >= threshold]
+
+            elif condition == ">":
+                df = df[df[measure] <= threshold]
+
+            elif condition == "=":
+                df = df[df[measure] != threshold]
+
+            elif condition == "<=":
+                df = df[df[measure] > threshold]
+
+            elif condition == ">=":
+                df = df[df[measure] < threshold]
+
+            st.session_state.df = df
+
+            st.success("Fact deletion completed")
+            st.dataframe(df, use_container_width=True)
 # =====================================================
 # FORECAST PAGE
 # =====================================================
