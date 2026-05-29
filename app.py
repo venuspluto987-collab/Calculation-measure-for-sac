@@ -623,95 +623,195 @@ if df is not None:
     # =====================================================
     # PLANNING PAGE
     # =====================================================
-
     elif menu == "Planning":
 
-        st.subheader("Planning Functions")
+    st.subheader("📌 SAC Planning Engine")
 
-        planning_type = st.selectbox(
-            "Planning Function",
-            [
-                "Copy Model",
-                "Allocation",
-                "Fact Deletion"
-            ]
+    action = st.selectbox(
+        "Planning Function",
+        [
+            "Version Change",
+            "Cross Model Copy",
+            "Copy Data Action",
+            "Allocation",
+            "Fact Deletion"
+        ]
+    )
+
+    # ==========================================
+    # VERSION CHANGE
+    # ==========================================
+
+    if action == "Version Change":
+
+        version_col = st.selectbox(
+            "Version Column",
+            dimensions
         )
 
-        # =====================================================
-        # COPY MODEL
-        # =====================================================
-
-        if planning_type == "Copy Model":
-
-            source_measure = st.selectbox(
-                "Source Measure",
-                measures
+        source_version = st.selectbox(
+            "Source Version",
+            sorted(
+                df[version_col]
+                .astype(str)
+                .unique()
             )
+        )
 
-            target_measure = st.text_input(
-                "Target Measure",
-                "Copied_Value"
-            )
+        target_version = st.text_input(
+            "Target Version",
+            "Budget"
+        )
 
-            increase_percent = st.number_input(
-                "Increase %",
-                value=0.0
-            )
+        adjustment = st.number_input(
+            "Adjustment %",
+            value=0.0
+        )
 
-            if st.button("Run Copy"):
+        if st.button("Execute Version Copy"):
 
-                df[target_measure] = (
-                    df[source_measure]
-                    * (
-                        1
-                        + increase_percent / 100
-                    )
+            temp = df[
+                df[version_col]
+                .astype(str)
+                == source_version
+            ].copy()
+
+            temp[version_col] = target_version
+
+            for m in measures:
+                temp[m] = (
+                    temp[m]
+                    * (1 + adjustment / 100)
                 ).round(2)
 
-                st.session_state.df = df
+            df = pd.concat(
+                [df, temp],
+                ignore_index=True
+            )
 
-                st.success("Copy Completed")
+            st.session_state.df = df
 
-                st.dataframe(
-                    df,
-                    use_container_width=True
+            st.success(
+                f"{source_version} → {target_version} completed"
+            )
+
+            st.dataframe(
+                df,
+                use_container_width=True
+            )
+
+    # ==========================================
+    # CROSS MODEL COPY
+    # ==========================================
+
+    elif action == "Cross Model Copy":
+
+        source_measure = st.selectbox(
+            "Source Measure",
+            measures
+        )
+
+        target_measure = st.text_input(
+            "Target Measure",
+            "Budget_Sales"
+        )
+
+        if st.button("Copy Measure"):
+
+            df[target_measure] = df[source_measure]
+
+            st.session_state.df = df
+
+            st.success(
+                "Cross Model Copy Completed"
+            )
+
+            st.dataframe(
+                df,
+                use_container_width=True
+            )
+
+    # ==========================================
+    # COPY DATA ACTION
+    # ==========================================
+
+    elif action == "Copy Data Action":
+
+        source_measure = st.selectbox(
+            "Source Measure",
+            measures
+        )
+
+        target_measure = st.text_input(
+            "Target Measure",
+            "Copied_Data"
+        )
+
+        factor = st.number_input(
+            "Multiplier",
+            value=1.0
+        )
+
+        if st.button("Run Copy"):
+
+            df[target_measure] = (
+                df[source_measure]
+                * factor
+            ).round(2)
+
+            st.session_state.df = df
+
+            st.success(
+                "Copy Action Completed"
+            )
+
+            st.dataframe(
+                df,
+                use_container_width=True
+            )
+
+    # ==========================================
+    # ALLOCATION
+    # ==========================================
+
+    elif action == "Allocation":
+
+        driver = st.selectbox(
+            "Driver Measure",
+            measures
+        )
+
+        amount = st.number_input(
+            "Amount to Allocate",
+            value=100000.0
+        )
+
+        target_col = st.text_input(
+            "Target Column",
+            "Allocated"
+        )
+
+        if st.button("Run Allocation"):
+
+            total_driver = df[driver].sum()
+
+            if total_driver == 0:
+
+                st.error(
+                    "Driver total cannot be zero"
                 )
 
-        # =====================================================
-        # ALLOCATION
-        # =====================================================
+            else:
 
-        elif planning_type == "Allocation":
+                df[target_col] = (
+                    df[driver]
+                    / total_driver
+                ) * amount
 
-            allocation_measure = st.selectbox(
-                "Driver Measure",
-                measures
-            )
-
-            allocation_amount = st.number_input(
-                "Allocation Amount",
-                value=100000.0
-            )
-
-            target_column = st.text_input(
-                "Allocated Column",
-                "Allocated_Value"
-            )
-
-            if st.button("Run Allocation"):
-
-                total = (
-                    df[allocation_measure]
-                    .sum()
+                df[target_col] = (
+                    df[target_col]
+                    .round(2)
                 )
-
-                df[target_column] = (
-                    (
-                        df[allocation_measure]
-                        / total
-                    )
-                    * allocation_amount
-                ).round(2)
 
                 st.session_state.df = df
 
@@ -724,97 +824,44 @@ if df is not None:
                     use_container_width=True
                 )
 
-        # =====================================================
-        # FACT DELETION
-        # =====================================================
+    # ==========================================
+    # FACT DELETION
+    # ==========================================
 
-        elif planning_type == "Fact Deletion":
+    elif action == "Fact Deletion":
 
-            delete_measure = st.selectbox(
-                "Measure",
-                measures
+        dim = st.selectbox(
+            "Dimension",
+            dimensions
+        )
+
+        member = st.selectbox(
+            "Member",
+            sorted(
+                df[dim]
+                .astype(str)
+                .unique()
+            )
+        )
+
+        if st.button("Delete Facts"):
+
+            df = df[
+                df[dim]
+                .astype(str)
+                != member
+            ]
+
+            st.session_state.df = df
+
+            st.success(
+                f"Deleted records for {member}"
             )
 
-            condition = st.selectbox(
-                "Condition",
-                [
-                    "<",
-                    ">",
-                    "=",
-                    "<=",
-                    ">="
-                ]
+            st.dataframe(
+                df,
+                use_container_width=True
             )
-
-            threshold = st.number_input(
-                "Threshold Value",
-                value=1000.0
-            )
-
-            if st.button("Run Fact Deletion"):
-
-                try:
-
-                    original_rows = len(df)
-
-                    if condition == "<":
-
-                        updated_df = df[
-                            df[delete_measure]
-                            >= threshold
-                        ]
-
-                    elif condition == ">":
-
-                        updated_df = df[
-                            df[delete_measure]
-                            <= threshold
-                        ]
-
-                    elif condition == "=":
-
-                        updated_df = df[
-                            df[delete_measure]
-                            != threshold
-                        ]
-
-                    elif condition == "<=":
-
-                        updated_df = df[
-                            df[delete_measure]
-                            > threshold
-                        ]
-
-                    elif condition == ">=":
-
-                        updated_df = df[
-                            df[delete_measure]
-                            < threshold
-                        ]
-
-                    df = updated_df.copy()
-
-                    st.session_state.df = df
-
-                    deleted_rows = (
-                        original_rows
-                        - len(df)
-                    )
-
-                    st.success(
-                        f"{deleted_rows} rows deleted successfully"
-                    )
-
-                    st.dataframe(
-                        df,
-                        use_container_width=True
-                    )
-
-                except Exception as e:
-
-                    st.error(
-                        f"Fact Deletion Error: {e}"
-                    )
 
     # =====================================================
     # FORECAST PAGE
