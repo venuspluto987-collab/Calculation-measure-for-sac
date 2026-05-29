@@ -1,12 +1,14 @@
+```python
 # =====================================================
 # SAC STYLE ANALYTICS + PLANNING APP
-# UPDATED ENTERPRISE VERSION
+# FULL ENTERPRISE VERSION
 # =====================================================
 
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 
 # =====================================================
 # PAGE CONFIG
@@ -110,7 +112,7 @@ if uploaded_file is not None:
         st.stop()
 
 # =====================================================
-# MAIN DATAFRAME
+# DATAFRAME
 # =====================================================
 
 df = st.session_state.df
@@ -131,7 +133,7 @@ if df is not None:
         st.stop()
 
     # =====================================================
-    # AUTO DETECT DIMENSIONS / MEASURES
+    # DETECT MEASURES / DIMENSIONS
     # =====================================================
 
     measures = []
@@ -158,13 +160,9 @@ if df is not None:
 
         st.subheader("Model Structure")
 
-        col1, col2 = st.columns(2)
+        c1, c2 = st.columns(2)
 
-        # =====================================================
-        # DIMENSIONS
-        # =====================================================
-
-        with col1:
+        with c1:
 
             st.markdown("### Dimensions")
 
@@ -172,11 +170,7 @@ if df is not None:
 
                 st.write("•", d)
 
-        # =====================================================
-        # MEASURES
-        # =====================================================
-
-        with col2:
+        with c2:
 
             st.markdown("### Measures")
 
@@ -184,9 +178,7 @@ if df is not None:
 
                 st.write("•", m)
 
-        # =====================================================
-        # PREVIEW
-        # =====================================================
+        st.divider()
 
         st.subheader("Preview Data")
 
@@ -195,6 +187,8 @@ if df is not None:
             use_container_width=True,
             height=400
         )
+
+        st.divider()
 
         # =====================================================
         # SAC CALCULATIONS
@@ -246,9 +240,13 @@ if df is not None:
             key="m2"
         )
 
-        # =====================================================
-        # IF CONDITION
-        # =====================================================
+        formula = ""
+
+        if calc_type == "Custom Formula":
+
+            formula = st.text_input(
+                "Formula Example: Sales * Quantity"
+            )
 
         if calc_type == "IF Condition":
 
@@ -277,22 +275,6 @@ if df is not None:
                 "False Value",
                 value=0.0
             )
-
-        # =====================================================
-        # CUSTOM FORMULA
-        # =====================================================
-
-        formula = ""
-
-        if calc_type == "Custom Formula":
-
-            formula = st.text_input(
-                "Formula Example: Sales * Quantity"
-            )
-
-        # =====================================================
-        # RUN CALCULATION
-        # =====================================================
 
         if st.button("Run Calculation"):
 
@@ -489,18 +471,10 @@ if df is not None:
 
                     df[calc_name] = df.eval(formula)
 
-                # =====================================================
-                # ROUND
-                # =====================================================
-
                 df[calc_name] = (
                     df[calc_name]
                     .round(2)
                 )
-
-                # =====================================================
-                # SAVE SESSION
-                # =====================================================
 
                 st.session_state.df = df
 
@@ -531,33 +505,19 @@ if df is not None:
 
         with k1:
 
-            st.metric(
-                "Rows",
-                len(df)
-            )
+            st.metric("Rows", len(df))
 
         with k2:
 
-            st.metric(
-                "Measures",
-                len(measures)
-            )
+            st.metric("Measures", len(measures))
 
         with k3:
 
-            st.metric(
-                "Dimensions",
-                len(dimensions)
-            )
+            st.metric("Dimensions", len(dimensions))
 
         with k4:
 
-            st.metric(
-                "Columns",
-                len(df.columns)
-            )
-
-        st.subheader("Chart Builder")
+            st.metric("Columns", len(df.columns))
 
         x_axis = st.selectbox(
             "X Axis",
@@ -631,17 +591,57 @@ if df is not None:
         planning_type = st.selectbox(
             "Planning Function",
             [
+                "Version Management",
                 "Copy Model",
                 "Allocation",
+                "Cross Model",
+                "Forecast Planning",
+                "Data Action",
                 "Fact Deletion"
             ]
         )
 
         # =====================================================
+        # VERSION MANAGEMENT
+        # =====================================================
+
+        if planning_type == "Version Management":
+
+            version_type = st.selectbox(
+                "Version Type",
+                [
+                    "Actual",
+                    "Budget",
+                    "Forecast",
+                    "Planning"
+                ]
+            )
+
+            version_column = st.text_input(
+                "Version Column",
+                "Version"
+            )
+
+            if st.button("Create Version"):
+
+                df[version_column] = version_type
+
+                st.session_state.df = df
+
+                st.success(
+                    f"{version_type} version created"
+                )
+
+                st.dataframe(
+                    df,
+                    use_container_width=True
+                )
+
+        # =====================================================
         # COPY MODEL
         # =====================================================
 
-        if planning_type == "Copy Model":
+        elif planning_type == "Copy Model":
 
             source_measure = st.selectbox(
                 "Source Measure",
@@ -723,6 +723,222 @@ if df is not None:
                     df,
                     use_container_width=True
                 )
+
+        # =====================================================
+        # CROSS MODEL
+        # =====================================================
+
+        elif planning_type == "Cross Model":
+
+            uploaded_cross = st.file_uploader(
+                "Upload Cross Model",
+                type=["csv", "xlsx"],
+                key="cross_model"
+            )
+
+            if uploaded_cross is not None:
+
+                try:
+
+                    if uploaded_cross.name.endswith(".csv"):
+
+                        cross_df = pd.read_csv(
+                            uploaded_cross
+                        )
+
+                    else:
+
+                        cross_df = pd.read_excel(
+                            uploaded_cross
+                        )
+
+                    st.dataframe(
+                        cross_df,
+                        use_container_width=True
+                    )
+
+                    common_columns = list(
+                        set(df.columns)
+                        &
+                        set(cross_df.columns)
+                    )
+
+                    if len(common_columns) > 0:
+
+                        join_column = st.selectbox(
+                            "Join Column",
+                            common_columns
+                        )
+
+                        join_type = st.selectbox(
+                            "Join Type",
+                            [
+                                "left",
+                                "right",
+                                "inner",
+                                "outer"
+                            ]
+                        )
+
+                        if st.button(
+                            "Run Cross Model"
+                        ):
+
+                            merged_df = pd.merge(
+                                df,
+                                cross_df,
+                                on=join_column,
+                                how=join_type
+                            )
+
+                            st.session_state.df = merged_df
+
+                            st.success(
+                                "Cross Model Completed"
+                            )
+
+                            st.dataframe(
+                                merged_df,
+                                use_container_width=True
+                            )
+
+                    else:
+
+                        st.warning(
+                            "No common columns found"
+                        )
+
+                except Exception as e:
+
+                    st.error(
+                        f"Cross Model Error: {e}"
+                    )
+
+        # =====================================================
+        # FORECAST PLANNING
+        # =====================================================
+
+        elif planning_type == "Forecast Planning":
+
+            forecast_measure = st.selectbox(
+                "Forecast Measure",
+                measures
+            )
+
+            forecast_percent = st.slider(
+                "Forecast Increase %",
+                1,
+                100,
+                10
+            )
+
+            forecast_column = st.text_input(
+                "Forecast Column",
+                "Forecast_Value"
+            )
+
+            if st.button("Run Forecast Planning"):
+
+                df[forecast_column] = (
+                    df[forecast_measure]
+                    * (
+                        1
+                        + forecast_percent / 100
+                    )
+                ).round(2)
+
+                st.session_state.df = df
+
+                st.success(
+                    "Forecast Planning Completed"
+                )
+
+                st.dataframe(
+                    df,
+                    use_container_width=True
+                )
+
+        # =====================================================
+        # DATA ACTION
+        # =====================================================
+
+        elif planning_type == "Data Action":
+
+            data_action = st.selectbox(
+                "Data Action Type",
+                [
+                    "Increase Values",
+                    "Decrease Values",
+                    "Multiply Values",
+                    "Replace Null",
+                    "Convert Negative to Positive"
+                ]
+            )
+
+            action_measure = st.selectbox(
+                "Measure",
+                measures
+            )
+
+            action_value = st.number_input(
+                "Action Value",
+                value=10.0
+            )
+
+            if st.button("Run Data Action"):
+
+                try:
+
+                    if data_action == "Increase Values":
+
+                        df[action_measure] = (
+                            df[action_measure]
+                            + action_value
+                        )
+
+                    elif data_action == "Decrease Values":
+
+                        df[action_measure] = (
+                            df[action_measure]
+                            - action_value
+                        )
+
+                    elif data_action == "Multiply Values":
+
+                        df[action_measure] = (
+                            df[action_measure]
+                            * action_value
+                        )
+
+                    elif data_action == "Replace Null":
+
+                        df[action_measure] = (
+                            df[action_measure]
+                            .fillna(action_value)
+                        )
+
+                    elif data_action == "Convert Negative to Positive":
+
+                        df[action_measure] = np.abs(
+                            df[action_measure]
+                        )
+
+                    st.session_state.df = df
+
+                    st.success(
+                        "Data Action Completed"
+                    )
+
+                    st.dataframe(
+                        df,
+                        use_container_width=True
+                    )
+
+                except Exception as e:
+
+                    st.error(
+                        f"Data Action Error: {e}"
+                    )
 
         # =====================================================
         # FACT DELETION
@@ -846,12 +1062,22 @@ if df is not None:
             )
         ).round(2)
 
-        fig = px.line(
-            forecast_df,
-            y=[
-                forecast_measure,
-                "Forecast"
-            ]
+        fig = go.Figure()
+
+        fig.add_trace(
+            go.Scatter(
+                y=forecast_df[forecast_measure],
+                mode="lines",
+                name="Actual"
+            )
+        )
+
+        fig.add_trace(
+            go.Scatter(
+                y=forecast_df["Forecast"],
+                mode="lines",
+                name="Forecast"
+            )
         )
 
         st.plotly_chart(
@@ -869,3 +1095,4 @@ else:
     st.info(
         "Upload CSV or Excel File"
     )
+```
