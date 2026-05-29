@@ -623,143 +623,199 @@ if df is not None:
     # =====================================================
     # PLANNING PAGE
     # =====================================================
-    # =====================================================
-# PLANNING PAGE
-# =====================================================
 
-elif menu == "Planning":
+    elif menu == "Planning":
 
-    st.subheader("📌 SAC Planning Engine")
+        st.subheader("Planning Functions")
 
-    action = st.selectbox(
-        "Planning Function",
-        [
-            "Version Change",
-            "Cross Model Copy",
-            "Copy Data Action",
-            "Allocation",
-            "Fact Deletion"
-        ]
-    )
-
-    # ==========================================
-    # VERSION CHANGE
-    # ==========================================
-
-    if action == "Version Change":
-
-        version_col = st.selectbox(
-            "Version Column",
-            dimensions
+        planning_type = st.selectbox(
+            "Planning Function",
+            [
+                "Copy Model",
+                "Allocation",
+                "Fact Deletion"
+            ]
         )
 
-        source_version = st.selectbox(
-            "Source Version",
-            sorted(df[version_col].astype(str).unique())
-        )
+        # =====================================================
+        # COPY MODEL
+        # =====================================================
 
-        target_version = st.text_input(
-            "Target Version",
-            "Budget"
-        )
+        if planning_type == "Copy Model":
 
-        adjustment = st.number_input(
-            "Adjustment %",
-            value=0.0
-        )
+            source_measure = st.selectbox(
+                "Source Measure",
+                measures
+            )
 
-        if st.button("Execute Version Copy"):
+            target_measure = st.text_input(
+                "Target Measure",
+                "Copied_Value"
+            )
 
-            temp = df[df[version_col].astype(str) == source_version].copy()
-            temp[version_col] = target_version
+            increase_percent = st.number_input(
+                "Increase %",
+                value=0.0
+            )
 
-            for m in measures:
-                temp[m] = (temp[m] * (1 + adjustment / 100)).round(2)
+            if st.button("Run Copy"):
 
-            df = pd.concat([df, temp], ignore_index=True)
-            st.session_state.df = df
-
-            st.success(f"{source_version} → {target_version} completed")
-            st.dataframe(df, use_container_width=True)
-
-    # ==========================================
-    # CROSS MODEL COPY
-    # ==========================================
-
-    elif action == "Cross Model Copy":
-
-        source_measure = st.selectbox("Source Measure", measures)
-        target_measure = st.text_input("Target Measure", "Budget_Sales")
-
-        if st.button("Copy Measure"):
-            df[target_measure] = df[source_measure]
-            st.session_state.df = df
-
-            st.success("Cross Model Copy Completed")
-            st.dataframe(df, use_container_width=True)
-
-    # ==========================================
-    # COPY DATA ACTION
-    # ==========================================
-
-    elif action == "Copy Data Action":
-
-        source_measure = st.selectbox("Source Measure", measures)
-        target_measure = st.text_input("Target Measure", "Copied_Data")
-
-        factor = st.number_input("Multiplier", value=1.0)
-
-        if st.button("Run Copy"):
-            df[target_measure] = (df[source_measure] * factor).round(2)
-            st.session_state.df = df
-
-            st.success("Copy Action Completed")
-            st.dataframe(df, use_container_width=True)
-
-    # ==========================================
-    # ALLOCATION
-    # ==========================================
-
-    elif action == "Allocation":
-
-        driver = st.selectbox("Driver Measure", measures)
-        amount = st.number_input("Amount to Allocate", value=100000.0)
-        target_col = st.text_input("Target Column", "Allocated")
-
-        if st.button("Run Allocation"):
-
-            total_driver = df[driver].sum()
-
-            if total_driver == 0:
-                st.error("Driver total cannot be zero")
-            else:
-                df[target_col] = (df[driver] / total_driver) * amount
-                df[target_col] = df[target_col].round(2)
+                df[target_measure] = (
+                    df[source_measure]
+                    * (
+                        1
+                        + increase_percent / 100
+                    )
+                ).round(2)
 
                 st.session_state.df = df
-                st.success("Allocation Completed")
-                st.dataframe(df, use_container_width=True)
 
-    # ==========================================
-    # FACT DELETION
-    # ==========================================
+                st.success("Copy Completed")
 
-    elif action == "Fact Deletion":
+                st.dataframe(
+                    df,
+                    use_container_width=True
+                )
 
-        dim = st.selectbox("Dimension", dimensions)
+        # =====================================================
+        # ALLOCATION
+        # =====================================================
 
-        member = st.selectbox(
-            "Member",
-            sorted(df[dim].astype(str).unique())
-        )
+        elif planning_type == "Allocation":
 
-        if st.button("Delete Facts"):
+            allocation_measure = st.selectbox(
+                "Driver Measure",
+                measures
+            )
 
-            df = df[df[dim].astype(str) != member]
-            st.session_state.df = df
+            allocation_amount = st.number_input(
+                "Allocation Amount",
+                value=100000.0
+            )
 
-            st.success(f"Deleted records for {member}")
-            st.dataframe(df, use_container_width=True)
+            target_column = st.text_input(
+                "Allocated Column",
+                "Allocated_Value"
+            )
+
+            if st.button("Run Allocation"):
+
+                total = (
+                    df[allocation_measure]
+                    .sum()
+                )
+
+                df[target_column] = (
+                    (
+                        df[allocation_measure]
+                        / total
+                    )
+                    * allocation_amount
+                ).round(2)
+
+                st.session_state.df = df
+
+                st.success(
+                    "Allocation Completed"
+                )
+
+                st.dataframe(
+                    df,
+                    use_container_width=True
+                )
+
+        # =====================================================
+        # FACT DELETION
+        # =====================================================
+
+        elif planning_type == "Fact Deletion":
+
+            delete_measure = st.selectbox(
+                "Measure",
+                measures
+            )
+
+            condition = st.selectbox(
+                "Condition",
+                [
+                    "<",
+                    ">",
+                    "=",
+                    "<=",
+                    ">="
+                ]
+            )
+
+            threshold = st.number_input(
+                "Threshold Value",
+                value=1000.0
+            )
+
+            if st.button("Run Fact Deletion"):
+
+                try:
+
+                    original_rows = len(df)
+
+                    if condition == "<":
+
+                        updated_df = df[
+                            df[delete_measure]
+                            >= threshold
+                        ]
+
+                    elif condition == ">":
+
+                        updated_df = df[
+                            df[delete_measure]
+                            <= threshold
+                        ]
+
+                    elif condition == "=":
+
+                        updated_df = df[
+                            df[delete_measure]
+                            != threshold
+                        ]
+
+                    elif condition == "<=":
+
+                        updated_df = df[
+                            df[delete_measure]
+                            > threshold
+                        ]
+
+                    elif condition == ">=":
+
+                        updated_df = df[
+                            df[delete_measure]
+                            < threshold
+                        ]
+
+                    df = updated_df.copy()
+
+                    st.session_state.df = df
+
+                    deleted_rows = (
+                        original_rows
+                        - len(df)
+                    )
+
+                    st.success(
+                        f"{deleted_rows} rows deleted successfully"
+                    )
+
+                    st.dataframe(
+                        df,
+                        use_container_width=True
+                    )
+
+                except Exception as e:
+
+                    st.error(
+                        f"Fact Deletion Error: {e}"
+                    )
+
     # =====================================================
     # FORECAST PAGE
     # =====================================================
