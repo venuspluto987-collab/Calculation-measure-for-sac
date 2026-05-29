@@ -222,8 +222,286 @@ if uploaded_file is not None:
         st.dataframe(
             df,
             use_container_width=True,
-            height=500
+            height=400
         )
+
+        # =====================================================
+        # SAC CALCULATIONS ENGINE
+        # =====================================================
+
+        st.subheader("SAC Calculations")
+
+        calc_type = st.selectbox(
+            "Calculation Type",
+            [
+                "Addition",
+                "Subtraction",
+                "Multiplication",
+                "Division",
+                "Percentage",
+                "Growth %",
+                "Running Total",
+                "Rank",
+                "Variance",
+                "Variance %",
+                "Average",
+                "Min",
+                "Max",
+                "Count",
+                "IF Condition",
+                "Custom Formula"
+            ]
+        )
+
+        calc_name = st.text_input(
+            "Calculated Column Name",
+            "New_Calculation"
+        )
+
+        measure1 = st.selectbox(
+            "Measure 1",
+            measures,
+            key="m1"
+        )
+
+        measure2 = st.selectbox(
+            "Measure 2",
+            measures,
+            key="m2"
+        )
+
+        # =====================================================
+        # IF CONDITION OPTIONS
+        # =====================================================
+
+        if calc_type == "IF Condition":
+
+            condition_operator = st.selectbox(
+                "Condition",
+                [
+                    ">",
+                    "<",
+                    "=",
+                    ">=",
+                    "<="
+                ]
+            )
+
+            threshold = st.number_input(
+                "Threshold",
+                value=100.0
+            )
+
+            true_value = st.number_input(
+                "True Value",
+                value=1.0
+            )
+
+            false_value = st.number_input(
+                "False Value",
+                value=0.0
+            )
+
+        # =====================================================
+        # CUSTOM FORMULA
+        # =====================================================
+
+        if calc_type == "Custom Formula":
+
+            formula = st.text_input(
+                "Formula Example: Sales * Quantity"
+            )
+
+        # =====================================================
+        # RUN CALCULATION
+        # =====================================================
+
+        if st.button("Run Calculation"):
+
+            try:
+
+                if calc_type == "Addition":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        + df[measure2]
+                    )
+
+                elif calc_type == "Subtraction":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        - df[measure2]
+                    )
+
+                elif calc_type == "Multiplication":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        * df[measure2]
+                    )
+
+                elif calc_type == "Division":
+
+                    df[calc_name] = np.where(
+                        df[measure2] != 0,
+                        df[measure1]
+                        / df[measure2],
+                        0
+                    )
+
+                elif calc_type == "Percentage":
+
+                    total = df[measure1].sum()
+
+                    df[calc_name] = (
+                        df[measure1]
+                        / total
+                    ) * 100
+
+                elif calc_type == "Growth %":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        .pct_change()
+                    ) * 100
+
+                elif calc_type == "Running Total":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        .cumsum()
+                    )
+
+                elif calc_type == "Rank":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        .rank(
+                            ascending=False
+                        )
+                    )
+
+                elif calc_type == "Variance":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        - df[measure2]
+                    )
+
+                elif calc_type == "Variance %":
+
+                    df[calc_name] = np.where(
+                        df[measure2] != 0,
+                        (
+                            (
+                                df[measure1]
+                                - df[measure2]
+                            )
+                            / df[measure2]
+                        ) * 100,
+                        0
+                    )
+
+                elif calc_type == "Average":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        .mean()
+                    )
+
+                elif calc_type == "Min":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        .min()
+                    )
+
+                elif calc_type == "Max":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        .max()
+                    )
+
+                elif calc_type == "Count":
+
+                    df[calc_name] = (
+                        df[measure1]
+                        .count()
+                    )
+
+                elif calc_type == "IF Condition":
+
+                    if condition_operator == ">":
+
+                        df[calc_name] = np.where(
+                            df[measure1] > threshold,
+                            true_value,
+                            false_value
+                        )
+
+                    elif condition_operator == "<":
+
+                        df[calc_name] = np.where(
+                            df[measure1] < threshold,
+                            true_value,
+                            false_value
+                        )
+
+                    elif condition_operator == "=":
+
+                        df[calc_name] = np.where(
+                            df[measure1] == threshold,
+                            true_value,
+                            false_value
+                        )
+
+                    elif condition_operator == ">=":
+
+                        df[calc_name] = np.where(
+                            df[measure1] >= threshold,
+                            true_value,
+                            false_value
+                        )
+
+                    elif condition_operator == "<=":
+
+                        df[calc_name] = np.where(
+                            df[measure1] <= threshold,
+                            true_value,
+                            false_value
+                        )
+
+                elif calc_type == "Custom Formula":
+
+                    df[calc_name] = (
+                        df.eval(formula)
+                    )
+
+                # =====================================================
+                # ROUND
+                # =====================================================
+
+                df[calc_name] = (
+                    df[calc_name]
+                    .round(2)
+                )
+
+                st.success(
+                    f"{calc_name} created successfully"
+                )
+
+                st.dataframe(
+                    df,
+                    use_container_width=True
+                )
+
+            except Exception as e:
+
+                st.error(
+                    f"Calculation Error: {e}"
+                )
 
     # =====================================================
     # STORY PAGE
@@ -233,14 +511,10 @@ if uploaded_file is not None:
 
         st.subheader("Story Dashboard")
 
-        # =====================================================
-        # CHECKS
-        # =====================================================
-
         if len(measures) == 0:
 
             st.warning(
-                "No numeric measures found in dataset"
+                "No numeric measures found"
             )
 
             st.stop()
@@ -248,209 +522,104 @@ if uploaded_file is not None:
         if len(dimensions) == 0:
 
             st.warning(
-                "No dimensions found in dataset"
+                "No dimensions found"
             )
 
             st.stop()
-
-        # =====================================================
-        # KPI CARDS
-        # =====================================================
 
         k1, k2, k3, k4 = st.columns(4)
 
         with k1:
 
-            st.markdown(
-                f"""
-                <div class="kpi-card">
-                    <div class="kpi-title">
-                        Total {measures[0]}
-                    </div>
-                    <div class="kpi-value">
-                        {round(df[measures[0]].sum(),2)}
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
+            st.metric(
+                f"Total {measures[0]}",
+                round(df[measures[0]].sum(), 2)
             )
 
         with k2:
 
-            st.markdown(
-                f"""
-                <div class="kpi-card">
-                    <div class="kpi-title">
-                        Average {measures[0]}
-                    </div>
-                    <div class="kpi-value">
-                        {round(df[measures[0]].mean(),2)}
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
+            st.metric(
+                f"Average {measures[0]}",
+                round(df[measures[0]].mean(), 2)
             )
 
         with k3:
 
-            st.markdown(
-                f"""
-                <div class="kpi-card">
-                    <div class="kpi-title">
-                        Max {measures[0]}
-                    </div>
-                    <div class="kpi-value">
-                        {round(df[measures[0]].max(),2)}
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
+            st.metric(
+                f"Max {measures[0]}",
+                round(df[measures[0]].max(), 2)
             )
 
         with k4:
 
-            st.markdown(
-                f"""
-                <div class="kpi-card">
-                    <div class="kpi-title">
-                        Min {measures[0]}
-                    </div>
-                    <div class="kpi-value">
-                        {round(df[measures[0]].min(),2)}
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
+            st.metric(
+                f"Min {measures[0]}",
+                round(df[measures[0]].min(), 2)
             )
-
-        # =====================================================
-        # FILTERS
-        # =====================================================
-
-        st.subheader("Filters")
-
-        filter_df = df.copy()
-
-        f1, f2 = st.columns(2)
-
-        with f1:
-
-            selected_dimension = st.selectbox(
-                "Dimension",
-                dimensions
-            )
-
-        with f2:
-
-            selected_values = st.multiselect(
-                "Values",
-                filter_df[selected_dimension]
-                .astype(str)
-                .dropna()
-                .unique(),
-                default=filter_df[selected_dimension]
-                .astype(str)
-                .dropna()
-                .unique()
-            )
-
-        filter_df = filter_df[
-            filter_df[selected_dimension]
-            .astype(str)
-            .isin(selected_values)
-        ]
-
-        # =====================================================
-        # CHART BUILDER
-        # =====================================================
 
         st.subheader("Chart Builder")
 
-        c1, c2, c3 = st.columns(3)
+        x_axis = st.selectbox(
+            "X Axis",
+            dimensions
+        )
 
-        with c1:
+        y_axis = st.selectbox(
+            "Y Axis",
+            measures
+        )
 
-            x_axis = st.selectbox(
-                "X Axis",
-                dimensions
-            )
-
-        with c2:
-
-            y_axis = st.selectbox(
-                "Y Axis",
-                measures
-            )
-
-        with c3:
-
-            chart_type = st.selectbox(
-                "Chart Type",
-                [
-                    "Bar",
-                    "Line",
-                    "Pie",
-                    "Area"
-                ]
-            )
-
-        # =====================================================
-        # CHARTS
-        # =====================================================
+        chart_type = st.selectbox(
+            "Chart Type",
+            [
+                "Bar",
+                "Line",
+                "Pie",
+                "Area"
+            ]
+        )
 
         fig = None
 
-        try:
+        if chart_type == "Bar":
 
-            if chart_type == "Bar":
-
-                fig = px.bar(
-                    filter_df,
-                    x=x_axis,
-                    y=y_axis
-                )
-
-            elif chart_type == "Line":
-
-                fig = px.line(
-                    filter_df,
-                    x=x_axis,
-                    y=y_axis
-                )
-
-            elif chart_type == "Pie":
-
-                fig = px.pie(
-                    filter_df,
-                    names=x_axis,
-                    values=y_axis
-                )
-
-            elif chart_type == "Area":
-
-                fig = px.area(
-                    filter_df,
-                    x=x_axis,
-                    y=y_axis
-                )
-
-            st.plotly_chart(
-                fig,
-                use_container_width=True
+            fig = px.bar(
+                df,
+                x=x_axis,
+                y=y_axis
             )
 
-        except Exception as e:
+        elif chart_type == "Line":
 
-            st.error(f"Chart Error: {e}")
+            fig = px.line(
+                df,
+                x=x_axis,
+                y=y_axis
+            )
 
-        # =====================================================
-        # STORY TABLE
-        # =====================================================
+        elif chart_type == "Pie":
 
-        st.subheader("Story Table")
+            fig = px.pie(
+                df,
+                names=x_axis,
+                values=y_axis
+            )
+
+        elif chart_type == "Area":
+
+            fig = px.area(
+                df,
+                x=x_axis,
+                y=y_axis
+            )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
 
         st.dataframe(
-            filter_df,
+            df,
             use_container_width=True
         )
 
@@ -460,29 +629,16 @@ if uploaded_file is not None:
 
     elif menu == "Planning":
 
-        st.subheader("Planning & Data Actions")
-
-        if len(measures) == 0:
-
-            st.warning(
-                "No numeric measures found"
-            )
-
-            st.stop()
+        st.subheader("Planning Functions")
 
         planning_type = st.selectbox(
             "Planning Function",
             [
                 "Copy Model",
                 "Allocation",
-                "Cross Model",
                 "Fact Deletion"
             ]
         )
-
-        # =====================================================
-        # COPY MODEL
-        # =====================================================
 
         if planning_type == "Copy Model":
 
@@ -492,7 +648,7 @@ if uploaded_file is not None:
             )
 
             target_measure = st.text_input(
-                "Target Measure Name",
+                "Target Measure",
                 "Copied_Value"
             )
 
@@ -501,34 +657,22 @@ if uploaded_file is not None:
                 value=0.0
             )
 
-            if st.button("Run Copy Model"):
+            if st.button("Run Copy"):
 
-                try:
-
-                    df[target_measure] = (
-                        df[source_measure]
-                        * (
-                            1
-                            + increase_percent / 100
-                        )
-                    ).round(2)
-
-                    st.success(
-                        "Copy Model Completed"
+                df[target_measure] = (
+                    df[source_measure]
+                    * (
+                        1
+                        + increase_percent / 100
                     )
+                ).round(2)
 
-                    st.dataframe(
-                        df,
-                        use_container_width=True
-                    )
+                st.success("Copy Completed")
 
-                except Exception as e:
-
-                    st.error(f"Error: {e}")
-
-        # =====================================================
-        # ALLOCATION
-        # =====================================================
+                st.dataframe(
+                    df,
+                    use_container_width=True
+                )
 
         elif planning_type == "Allocation":
 
@@ -543,193 +687,33 @@ if uploaded_file is not None:
             )
 
             target_column = st.text_input(
-                "Allocated Measure Name",
+                "Allocated Column",
                 "Allocated_Value"
             )
 
             if st.button("Run Allocation"):
 
-                try:
+                total = (
+                    df[allocation_measure]
+                    .sum()
+                )
 
-                    total = (
-                        df[allocation_measure]
-                        .sum()
-                    )
-
-                    percent = (
+                df[target_column] = (
+                    (
                         df[allocation_measure]
                         / total
                     )
+                    * allocation_amount
+                ).round(2)
 
-                    df[target_column] = (
-                        percent
-                        * allocation_amount
-                    ).round(2)
+                st.success(
+                    "Allocation Completed"
+                )
 
-                    st.success(
-                        "Allocation Completed"
-                    )
-
-                    st.dataframe(
-                        df,
-                        use_container_width=True
-                    )
-
-                except Exception as e:
-
-                    st.error(f"Error: {e}")
-
-        # =====================================================
-        # CROSS MODEL
-        # =====================================================
-
-        elif planning_type == "Cross Model":
-
-            uploaded_cross = st.file_uploader(
-                "Upload Another Model",
-                type=["csv", "xlsx"],
-                key="crossmodel"
-            )
-
-            if uploaded_cross is not None:
-
-                try:
-
-                    if uploaded_cross.name.endswith(".csv"):
-
-                        cross_df = pd.read_csv(
-                            uploaded_cross
-                        )
-
-                    else:
-
-                        cross_df = pd.read_excel(
-                            uploaded_cross
-                        )
-
-                    st.subheader(
-                        "Cross Model Preview"
-                    )
-
-                    st.dataframe(
-                        cross_df,
-                        use_container_width=True
-                    )
-
-                    common_columns = list(
-                        set(df.columns)
-                        &
-                        set(cross_df.columns)
-                    )
-
-                    if len(common_columns) > 0:
-
-                        join_column = st.selectbox(
-                            "Join Column",
-                            common_columns
-                        )
-
-                        if st.button(
-                            "Run Cross Model"
-                        ):
-
-                            merged_df = pd.merge(
-                                df,
-                                cross_df,
-                                on=join_column,
-                                how="left"
-                            )
-
-                            st.success(
-                                "Cross Model Merge Completed"
-                            )
-
-                            st.dataframe(
-                                merged_df,
-                                use_container_width=True
-                            )
-
-                    else:
-
-                        st.warning(
-                            "No common columns found"
-                        )
-
-                except Exception as e:
-
-                    st.error(f"Error: {e}")
-
-        # =====================================================
-        # FACT DELETION
-        # =====================================================
-
-        elif planning_type == "Fact Deletion":
-
-            delete_measure = st.selectbox(
-                "Measure",
-                measures
-            )
-
-            condition = st.selectbox(
-                "Condition",
-                [
-                    "<",
-                    ">",
-                    "="
-                ]
-            )
-
-            threshold = st.number_input(
-                "Threshold Value",
-                value=1000.0
-            )
-
-            if st.button(
-                "Run Fact Deletion"
-            ):
-
-                try:
-
-                    original_rows = len(df)
-
-                    if condition == "<":
-
-                        df = df[
-                            df[delete_measure]
-                            >= threshold
-                        ]
-
-                    elif condition == ">":
-
-                        df = df[
-                            df[delete_measure]
-                            <= threshold
-                        ]
-
-                    elif condition == "=":
-
-                        df = df[
-                            df[delete_measure]
-                            != threshold
-                        ]
-
-                    deleted_rows = (
-                        original_rows
-                        - len(df)
-                    )
-
-                    st.success(
-                        f"{deleted_rows} rows deleted"
-                    )
-
-                    st.dataframe(
-                        df,
-                        use_container_width=True
-                    )
-
-                except Exception as e:
-
-                    st.error(f"Error: {e}")
+                st.dataframe(
+                    df,
+                    use_container_width=True
+                )
 
     # =====================================================
     # FORECAST PAGE
@@ -738,14 +722,6 @@ if uploaded_file is not None:
     elif menu == "Forecast":
 
         st.subheader("Forecast Analysis")
-
-        if len(measures) == 0:
-
-            st.warning(
-                "No numeric measures found"
-            )
-
-            st.stop()
 
         forecast_measure = st.selectbox(
             "Measure",
