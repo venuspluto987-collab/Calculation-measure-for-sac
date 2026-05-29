@@ -4,7 +4,7 @@ import numpy as np
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="Advanced Calculated Measures",
+    page_title="Advanced SAC Planning App",
     layout="wide"
 )
 
@@ -16,7 +16,7 @@ with open("styles.css") as f:
     )
 
 # ---------------- TITLE ----------------
-st.title("📊 Advanced Calculated Measures")
+st.title("📊 SAC Style Planning & Calculations")
 
 # ---------------- FILE UPLOAD ----------------
 uploaded_file = st.file_uploader(
@@ -27,7 +27,7 @@ uploaded_file = st.file_uploader(
 # ---------------- MAIN ----------------
 if uploaded_file is not None:
 
-    # Read File
+    # ---------------- READ FILE ----------------
     try:
 
         if uploaded_file.name.endswith(".csv"):
@@ -51,7 +51,7 @@ if uploaded_file is not None:
         ):
             measures.append(col)
 
-    # ---------------- SHOW DATA ----------------
+    # ---------------- DATASET ----------------
     st.subheader("Dataset")
 
     st.dataframe(
@@ -59,10 +59,10 @@ if uploaded_file is not None:
         use_container_width=True
     )
 
-    # ---------------- CALCULATION SECTION ----------------
+    # ---------------- CALCULATED MEASURE SECTION ----------------
     st.subheader("Create Calculated Measure")
 
-    # Calculation Types
+    # ---------------- CALCULATIONS ----------------
     calculation_types = [
 
         # Basic
@@ -76,14 +76,14 @@ if uploaded_file is not None:
         "Growth %",
         "Percentage Contribution",
 
-        # Aggregations
+        # Aggregation
         "Average",
         "Sum",
         "Minimum",
         "Maximum",
         "Count",
 
-        # Running Calculations
+        # Running
         "Running Total",
         "Cumulative Average",
 
@@ -91,16 +91,16 @@ if uploaded_file is not None:
         "Rank",
         "Dense Rank",
 
-        # Statistical
+        # Statistics
         "Standard Deviation",
         "Variance",
         "Z-Score",
 
-        # Time Intelligence
+        # Time
         "Moving Average",
         "Rolling Sum",
 
-        # Window Functions
+        # Window
         "Lag",
         "Lead",
 
@@ -114,7 +114,16 @@ if uploaded_file is not None:
 
         # Analytics
         "Percentile",
-        "Normalized Score"
+        "Normalized Score",
+
+        # ---------------- PLANNING ----------------
+        "Allocation",
+        "Fact Deletion",
+        "Top Down Allocation",
+        "Bottom Up Allocation",
+        "Spread Value",
+        "Forecast Increase %",
+        "Copy Value"
     ]
 
     col1, col2, col3 = st.columns(3)
@@ -127,7 +136,7 @@ if uploaded_file is not None:
             measures
         )
 
-    # ---------------- CALC TYPE ----------------
+    # ---------------- CALCULATION TYPE ----------------
     with col2:
 
         calc_type = st.selectbox(
@@ -142,13 +151,13 @@ if uploaded_file is not None:
 
             "Running Total",
             "Average",
-            "Rank",
             "Growth %",
             "Sum",
             "Minimum",
             "Maximum",
             "Count",
             "Cumulative Average",
+            "Rank",
             "Dense Rank",
             "Standard Deviation",
             "Variance",
@@ -162,6 +171,15 @@ if uploaded_file is not None:
             "Discount Calculation",
             "Percentile",
             "Normalized Score",
+
+            # Planning
+            "Allocation",
+            "Fact Deletion",
+            "Top Down Allocation",
+            "Bottom Up Allocation",
+            "Spread Value",
+            "Forecast Increase %",
+            "Copy Value",
             "Percentage Contribution"
         ]
 
@@ -177,7 +195,7 @@ if uploaded_file is not None:
                 measures
             )
 
-    # ---------------- NEW COLUMN NAME ----------------
+    # ---------------- NEW COLUMN ----------------
     new_measure_name = st.text_input(
         "Calculated Measure Name",
         "Calculated_Measure"
@@ -188,7 +206,7 @@ if uploaded_file is not None:
 
         try:
 
-            # Convert Numeric
+            # Convert numeric
             df[measure1] = pd.to_numeric(
                 df[measure1],
                 errors="coerce"
@@ -200,7 +218,9 @@ if uploaded_file is not None:
                     errors="coerce"
                 )
 
-            # ---------------- BASIC ----------------
+            # =====================================================
+            # BASIC CALCULATIONS
+            # =====================================================
 
             if calc_type == "Addition":
 
@@ -233,7 +253,9 @@ if uploaded_file is not None:
                     np.nan
                 )
 
-            # ---------------- PERCENTAGE ----------------
+            # =====================================================
+            # PERCENTAGE
+            # =====================================================
 
             elif calc_type == "Profit %":
 
@@ -262,7 +284,9 @@ if uploaded_file is not None:
                     / total
                 ) * 100
 
-            # ---------------- AGGREGATION ----------------
+            # =====================================================
+            # AGGREGATION
+            # =====================================================
 
             elif calc_type == "Average":
 
@@ -309,7 +333,9 @@ if uploaded_file is not None:
 
                 df[new_measure_name] = count_value
 
-            # ---------------- RUNNING ----------------
+            # =====================================================
+            # RUNNING
+            # =====================================================
 
             elif calc_type == "Running Total":
 
@@ -326,7 +352,9 @@ if uploaded_file is not None:
                     .mean()
                 )
 
-            # ---------------- RANKING ----------------
+            # =====================================================
+            # RANKING
+            # =====================================================
 
             elif calc_type == "Rank":
 
@@ -347,7 +375,9 @@ if uploaded_file is not None:
                     )
                 )
 
-            # ---------------- STATISTICS ----------------
+            # =====================================================
+            # STATISTICS
+            # =====================================================
 
             elif calc_type == "Standard Deviation":
 
@@ -387,7 +417,9 @@ if uploaded_file is not None:
                     / std
                 )
 
-            # ---------------- TIME ----------------
+            # =====================================================
+            # TIME
+            # =====================================================
 
             elif calc_type == "Moving Average":
 
@@ -405,7 +437,9 @@ if uploaded_file is not None:
                     .sum()
                 )
 
-            # ---------------- WINDOW ----------------
+            # =====================================================
+            # WINDOW FUNCTIONS
+            # =====================================================
 
             elif calc_type == "Lag":
 
@@ -421,7 +455,9 @@ if uploaded_file is not None:
                     .shift(-1)
                 )
 
-            # ---------------- CONDITIONAL ----------------
+            # =====================================================
+            # CONDITIONAL
+            # =====================================================
 
             elif calc_type == "High/Low Category":
 
@@ -436,7 +472,9 @@ if uploaded_file is not None:
                     "Low"
                 )
 
-            # ---------------- FINANCE ----------------
+            # =====================================================
+            # FINANCE
+            # =====================================================
 
             elif calc_type == "Margin %":
 
@@ -462,7 +500,9 @@ if uploaded_file is not None:
                     * 0.10
                 )
 
-            # ---------------- ANALYTICS ----------------
+            # =====================================================
+            # ANALYTICS
+            # =====================================================
 
             elif calc_type == "Percentile":
 
@@ -496,12 +536,119 @@ if uploaded_file is not None:
                     )
                 )
 
-            # ---------------- SUCCESS ----------------
+            # =====================================================
+            # PLANNING
+            # =====================================================
+
+            elif calc_type == "Allocation":
+
+                total_value = (
+                    df[measure1]
+                    .sum()
+                )
+
+                percentage = (
+                    df[measure1]
+                    / total_value
+                )
+
+                allocation_amount = st.number_input(
+                    "Allocation Amount",
+                    value=100000.0
+                )
+
+                df[new_measure_name] = (
+                    percentage
+                    * allocation_amount
+                ).round(2)
+
+            elif calc_type == "Fact Deletion":
+
+                threshold = st.number_input(
+                    "Delete rows below value",
+                    value=1000.0
+                )
+
+                df = df[
+                    df[measure1]
+                    >= threshold
+                ]
+
+                st.warning(
+                    "Rows deleted based on threshold"
+                )
+
+                df[new_measure_name] = "Remaining"
+
+            elif calc_type == "Top Down Allocation":
+
+                total_budget = st.number_input(
+                    "Total Budget",
+                    value=50000.0
+                )
+
+                row_count = len(df)
+
+                df[new_measure_name] = (
+                    total_budget / row_count
+                )
+
+            elif calc_type == "Bottom Up Allocation":
+
+                total = (
+                    df[measure1]
+                    .sum()
+                )
+
+                df[new_measure_name] = total
+
+            elif calc_type == "Spread Value":
+
+                spread_amount = st.number_input(
+                    "Spread Amount",
+                    value=12000.0
+                )
+
+                periods = st.number_input(
+                    "Number of Periods",
+                    value=12
+                )
+
+                spread_value = (
+                    spread_amount / periods
+                )
+
+                df[new_measure_name] = spread_value
+
+            elif calc_type == "Forecast Increase %":
+
+                increase_percent = st.number_input(
+                    "Increase %",
+                    value=10.0
+                )
+
+                df[new_measure_name] = (
+                    df[measure1]
+                    * (
+                        1
+                        + increase_percent / 100
+                    )
+                ).round(2)
+
+            elif calc_type == "Copy Value":
+
+                df[new_measure_name] = (
+                    df[measure1]
+                )
+
+            # =====================================================
+            # SUCCESS
+            # =====================================================
+
             st.success(
                 f"{new_measure_name} created successfully"
             )
 
-            # ---------------- UPDATED DATA ----------------
             st.subheader("Updated Dataset")
 
             st.dataframe(
@@ -510,7 +657,9 @@ if uploaded_file is not None:
             )
 
         except Exception as e:
-            st.error(f"Calculation Error: {e}")
+            st.error(
+                f"Calculation Error: {e}"
+            )
 
 else:
     st.info("Upload CSV or Excel File")
