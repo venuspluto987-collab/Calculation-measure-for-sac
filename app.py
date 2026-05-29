@@ -1,5 +1,5 @@
 # =====================================================
-# SAC ANALYTICS CLOUD - FULL WORKING VERSION
+# SAC ANALYTICS CLOUD - STABLE VERSION (NO CRASH)
 # =====================================================
 
 import streamlit as st
@@ -42,10 +42,14 @@ st.title("📊 SAC Analytics Cloud")
 # UPLOAD
 # =====================================================
 
-file = st.file_uploader("Upload CSV or Excel", type=["csv","xlsx"])
+file = st.file_uploader("Upload CSV or Excel", type=["csv", "xlsx"])
 
 if file:
     df = pd.read_csv(file) if file.name.endswith("csv") else pd.read_excel(file)
+
+    # 🚨 FIX: remove duplicate columns (IMPORTANT)
+    df = df.loc[:, ~df.columns.duplicated()]
+
     st.session_state.df = df
 
 df = st.session_state.df
@@ -62,7 +66,7 @@ measures = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
 dimensions = [c for c in df.columns if c not in measures]
 
 # =====================================================
-# MODEL PAGE (FULL CALC ENGINE)
+# MODEL PAGE
 # =====================================================
 
 if menu == "Model":
@@ -174,10 +178,10 @@ if menu == "Model":
 
         st.session_state.df = df
         st.success("Calculation Added")
-        st.dataframe(df)
+        st.dataframe(df, use_container_width=True)
 
 # =====================================================
-# STORY PAGE (FIXED FULL)
+# STORY PAGE (FIXED SAFE)
 # =====================================================
 
 elif menu == "Story":
@@ -201,15 +205,33 @@ elif menu == "Story":
             st.dataframe(df, use_container_width=True)
 
         elif view == "Calculated":
-            st.dataframe(df[calc_cols + measures], use_container_width=True)
+            safe_cols = list(dict.fromkeys(calc_cols + measures))
+            safe_cols = [c for c in safe_cols if c in df.columns]
+
+            st.dataframe(df[safe_cols], use_container_width=True)
 
         elif view == "Planning":
+
             plan_cols = [c for c in df.columns if "alloc" in c.lower() or "version" in c.lower() or "copy" in c.lower()]
-            st.dataframe(df[plan_cols + measures], use_container_width=True)
+
+            safe_cols = list(dict.fromkeys(plan_cols + measures))
+            safe_cols = [c for c in safe_cols if c in df.columns]
+
+            if len(safe_cols) == 0:
+                st.warning("No planning columns")
+            else:
+                st.dataframe(df[safe_cols], use_container_width=True)
 
         elif view == "Forecast":
+
             fc = [c for c in df.columns if "forecast" in c.lower()]
-            st.dataframe(df[fc + measures], use_container_width=True)
+            safe_cols = list(dict.fromkeys(fc + measures))
+            safe_cols = [c for c in safe_cols if c in df.columns]
+
+            if len(safe_cols) == 0:
+                st.warning("No forecast columns")
+            else:
+                st.dataframe(df[safe_cols], use_container_width=True)
 
     with right:
 
@@ -222,13 +244,10 @@ elif menu == "Story":
 
         if chart == "Bar":
             fig = px.bar(df, x=x, y=y)
-
         elif chart == "Line":
             fig = px.line(df, x=x, y=y)
-
         elif chart == "Pie":
             fig = px.pie(df, names=x, values=y)
-
         else:
             fig = px.scatter(df, x=x, y=y)
 
@@ -237,7 +256,7 @@ elif menu == "Story":
     st.dataframe(df, use_container_width=True)
 
 # =====================================================
-# PLANNING PAGE (FULL FIXED)
+# PLANNING PAGE
 # =====================================================
 
 elif menu == "Planning":
@@ -285,7 +304,7 @@ elif menu == "Planning":
                 df = pd.concat([df, temp], ignore_index=True)
 
                 st.session_state.df = df
-                st.success("Version Converted")
+                st.success("Converted")
                 st.dataframe(df)
 
     # ================= COPY =================
@@ -314,7 +333,7 @@ elif menu == "Planning":
     # ================= CROSS MODEL =================
     elif action == "Cross Model":
 
-        f = st.file_uploader("Upload File", type=["csv","xlsx"])
+        f = st.file_uploader("Upload", type=["csv","xlsx"])
 
         if f:
 
@@ -328,6 +347,7 @@ elif menu == "Planning":
 
                 if st.button("Merge"):
                     df = pd.merge(df, df2, on=j)
+                    df = df.loc[:, ~df.columns.duplicated()]  # SAFE FIX
                     st.session_state.df = df
                     st.dataframe(df)
 
