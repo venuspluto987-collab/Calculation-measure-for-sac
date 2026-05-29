@@ -1,5 +1,5 @@
 # =====================================================
-# SAC ANALYTICS CLOUD - FINAL STABLE VERSION
+# SAC ANALYTICS CLOUD - FINAL STABLE WORKING VERSION
 # =====================================================
 
 import streamlit as st
@@ -47,7 +47,7 @@ file = st.file_uploader("Upload CSV or Excel", type=["csv", "xlsx"])
 if file:
     df = pd.read_csv(file) if file.name.endswith("csv") else pd.read_excel(file)
 
-    # SAFE CLEANUP
+    # SAFE CLEAN
     df = df.loc[:, ~df.columns.duplicated()]
     df = df.fillna(0)
 
@@ -60,124 +60,61 @@ if df is None:
     st.stop()
 
 # =====================================================
-# MODEL DETECTION
+# DETECT
 # =====================================================
 
 measures = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
 dimensions = [c for c in df.columns if c not in measures]
 
 # =====================================================
-# MODEL PAGE
+# MODEL
 # =====================================================
 
 if menu == "Model":
 
-    st.subheader("📐 Data Model")
+    st.subheader("📐 Model")
 
-    c1, c2 = st.columns(2)
+    col1, col2 = st.columns(2)
 
-    with c1:
+    with col1:
         st.markdown("### Dimensions")
         for d in dimensions:
             st.write("📌", d)
 
-    with c2:
+    with col2:
         st.markdown("### Measures")
         for m in measures:
             st.write("📊", m)
 
     st.dataframe(df, use_container_width=True)
 
-    st.subheader("🧮 Simple Calculation")
-
-    calc = st.selectbox(
-        "Type",
-        ["Add","Subtract","Multiply","Divide"]
-    )
-
-    name = st.text_input("New Column", "Calc")
-
-    m1 = st.selectbox("Measure 1", measures)
-    m2 = st.selectbox("Measure 2", measures)
-
-    if st.button("Run Calculation"):
-
-        if calc == "Add":
-            df[name] = df[m1] + df[m2]
-
-        elif calc == "Subtract":
-            df[name] = df[m1] - df[m2]
-
-        elif calc == "Multiply":
-            df[name] = df[m1] * df[m2]
-
-        elif calc == "Divide":
-            df[name] = np.where(df[m2] != 0, df[m1] / df[m2], 0)
-
-        df[name] = pd.to_numeric(df[name], errors="coerce").round(2)
-
-        st.session_state.df = df
-        st.success("Calculation added")
-        st.dataframe(df)
-
 # =====================================================
-# STORY PAGE
+# STORY
 # =====================================================
 
 elif menu == "Story":
 
     st.subheader("📊 Story Builder")
 
-    calc_cols = [c for c in df.columns if c not in measures + dimensions]
+    x = st.selectbox("X Axis", dimensions)
+    y = st.selectbox("Y Axis", measures)
 
-    left, right = st.columns(2)
+    chart = st.selectbox("Chart", ["Bar","Line","Pie","Scatter"])
 
-    with left:
+    if chart == "Bar":
+        fig = px.bar(df, x=x, y=y)
+    elif chart == "Line":
+        fig = px.line(df, x=x, y=y)
+    elif chart == "Pie":
+        fig = px.pie(df, names=x, values=y)
+    else:
+        fig = px.scatter(df, x=x, y=y)
 
-        view = st.selectbox(
-            "View",
-            ["Main","Calculated","Planning","Forecast"]
-        )
-
-        if view == "Main":
-            st.dataframe(df, use_container_width=True)
-
-        elif view == "Calculated":
-            safe = list(dict.fromkeys(calc_cols + measures))
-            st.dataframe(df[[c for c in safe if c in df.columns]])
-
-        elif view == "Planning":
-            plan_cols = [c for c in df.columns if "version" in c.lower() or "alloc" in c.lower() or "copy" in c.lower()]
-            safe = list(dict.fromkeys(plan_cols + measures))
-            st.dataframe(df[[c for c in safe if c in df.columns]])
-
-        elif view == "Forecast":
-            fc = [c for c in df.columns if "forecast" in c.lower()]
-            safe = list(dict.fromkeys(fc + measures))
-            st.dataframe(df[[c for c in safe if c in df.columns]])
-
-    with right:
-
-        x = st.selectbox("X Axis", dimensions)
-        y = st.selectbox("Y Axis", measures)
-
-        chart = st.selectbox("Chart", ["Bar","Line","Pie","Scatter"])
-
-        if chart == "Bar":
-            fig = px.bar(df, x=x, y=y)
-        elif chart == "Line":
-            fig = px.line(df, x=x, y=y)
-        elif chart == "Pie":
-            fig = px.pie(df, names=x, values=y)
-        else:
-            fig = px.scatter(df, x=x, y=y)
-
-        st.plotly_chart(fig, use_container_width=True)
-
+    st.plotly_chart(fig, use_container_width=True)
     st.dataframe(df, use_container_width=True)
 
 # =====================================================
-# PLANNING PAGE
+# PLANNING
 # =====================================================
 
 elif menu == "Planning":
@@ -190,34 +127,34 @@ elif menu == "Planning":
     )
 
     # =====================================================
-    # VERSION COPY (ACTUAL → BUDGET FIXED)
+    # VERSION COPY (FIXED ACTUAL → BUDGET)
     # =====================================================
 
     if action == "Version Copy":
 
-        st.markdown("### 🔁 Copy Actual → Budget")
+        st.markdown("### 🔁 Actual → Budget Copy")
 
-        version_col = st.selectbox(
-            "Version Column",
-            df.columns
-        )
-
-        df[version_col] = df[version_col].astype(str).fillna("Actual")
-
+        version_col = st.selectbox("Version Column", df.columns)
         measure = st.selectbox("Measure", measures)
-
         adjust = st.number_input("Adjustment %", 0.0)
 
-        if st.button("Copy Actual to Budget"):
+        if st.button("Run Copy"):
 
-            actual_df = df[df[version_col].str.lower() == "actual"].copy()
+            # CLEAN VERSION COLUMN (CRITICAL FIX)
+            df[version_col] = (
+                df[version_col]
+                .astype(str)
+                .str.strip()
+                .str.lower()
+            )
+
+            actual_df = df[df[version_col] == "actual"].copy()
 
             if actual_df.empty:
-                st.error("No Actual data found")
+                st.error("No 'Actual' data found in Version column")
                 st.stop()
 
-            actual_df[version_col] = "Budget"
-
+            actual_df[version_col] = "budget"
             actual_df[measure] = actual_df[measure] * (1 + adjust / 100)
 
             df = pd.concat([df, actual_df], ignore_index=True)
@@ -226,7 +163,7 @@ elif menu == "Planning":
 
             st.session_state.df = df
 
-            st.success("Actual copied to Budget successfully")
+            st.success("Actual successfully copied to Budget")
 
             st.dataframe(df, use_container_width=True)
 
@@ -299,7 +236,7 @@ elif menu == "Planning":
             st.dataframe(df)
 
 # =====================================================
-# FORECAST PAGE
+# FORECAST
 # =====================================================
 
 elif menu == "Forecast":
