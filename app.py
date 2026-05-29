@@ -154,7 +154,6 @@ elif menu == "Planning":
         ["Version Conversion","Allocation","Copy","Data Action","Fact Delete"]
     )
 
-  
 # =====================================================
 # VERSION CONVERSION
 # =====================================================
@@ -163,19 +162,25 @@ if action == "Version Conversion":
 
     st.markdown("### 🔁 Version Conversion")
 
-    version_col = st.selectbox(
-        "Version Column",
+    # Select Dimension
+    dimension_col = st.selectbox(
+        "Source Dimension",
         dimensions
     )
 
-    source_version = st.selectbox(
-        "Source Version",
-        sorted(df[version_col].astype(str).unique())
+    # All + Members
+    members = ["All"] + sorted(
+        df[dimension_col].astype(str).unique().tolist()
     )
 
-    target_version = st.text_input(
+    selected_member = st.selectbox(
+        "Member",
+        members
+    )
+
+    target_version = st.selectbox(
         "Target Version",
-        "Budget"
+        ["Budget", "Forecast", "Planning"]
     )
 
     measure = st.selectbox(
@@ -196,29 +201,31 @@ if action == "Version Conversion":
 
     if st.button("Convert Version"):
 
-        # -----------------------------------
+        # =================================================
         # CREATE COLUMN
-        # -----------------------------------
+        # =================================================
         if mode == "Create Column":
 
             new_col = f"{target_version}_{measure}"
 
-            df[new_col] = np.where(
-                df[version_col].astype(str) == source_version,
-                df[measure] * (1 + adjust / 100),
-                0
-            )
+            if selected_member == "All":
 
-            df[new_col] = (
-                pd.to_numeric(df[new_col], errors="coerce")
-                .fillna(0)
-                .round(2)
-            )
+                df[new_col] = (
+                    df[measure] * (1 + adjust / 100)
+                ).round(2)
+
+            else:
+
+                df[new_col] = np.where(
+                    df[dimension_col].astype(str) == selected_member,
+                    df[measure] * (1 + adjust / 100),
+                    0
+                )
 
             st.session_state.df = df
 
             st.success(
-                f"Created column: {new_col}"
+                f"{new_col} created successfully"
             )
 
             st.dataframe(
@@ -226,23 +233,31 @@ if action == "Version Conversion":
                 use_container_width=True
             )
 
-        # -----------------------------------
-        # CREATE VERSION ROWS (SAC STYLE)
-        # -----------------------------------
+        # =================================================
+        # SAC STYLE VERSION ROWS
+        # =================================================
         else:
 
-            temp = df[
-                df[version_col].astype(str) == source_version
-            ].copy()
+            if selected_member == "All":
+
+                temp = df.copy()
+
+            else:
+
+                temp = df[
+                    df[dimension_col].astype(str)
+                    == selected_member
+                ].copy()
 
             if temp.empty:
+
                 st.error(
-                    "No matching source version found."
+                    "No matching records found."
                 )
 
             else:
 
-                temp[version_col] = target_version
+                temp["Version"] = target_version
 
                 temp[measure] = (
                     temp[measure]
@@ -257,14 +272,13 @@ if action == "Version Conversion":
                 st.session_state.df = result_df
 
                 st.success(
-                    f"{source_version} → {target_version} conversion completed"
+                    f"{target_version} version created successfully"
                 )
 
                 st.dataframe(
                     result_df,
                     use_container_width=True
                 )
-
     # =====================================================
     # ALLOCATION
     # =====================================================
