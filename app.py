@@ -1,4 +1,3 @@
-```python id="final_app_py_sac"
 # =====================================================
 # SAC STYLE ANALYTICS + PLANNING APP (FINAL STABLE VERSION)
 # =====================================================
@@ -515,4 +514,3 @@ if df is not None:
 else:
 
     st.info("Upload CSV or Excel File")
-```
